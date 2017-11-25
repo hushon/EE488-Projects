@@ -11,10 +11,6 @@ class spider_environment:
         leg_lb = baby_spider_environment()
         leg_rf = baby_spider_environment()
         leg_lf = baby_spider_environment()
-        # bitmask_rb = 0b11000000
-        # bitmask_lb = 0b00110000
-        # bitmask_rf = 0b00001100
-        # bitmask_lf = 0b00000011
         self.n_states = 256
         self.n_actions = 256
         self.reward = np.zeros([self.n_states, self.n_actions])
@@ -37,15 +33,15 @@ class spider_environment:
                 self.next_state[s,a] = leg_rb.next_state[s_rb,a_rb]*64+leg_lb.next_state[s_lb,a_lb]*16+leg_rf.next_state[s_rf,a_rf]*4+leg_lf.next_state[s_lf,a_lf]
                 
                 # evaluate if a leg is currently down and still down after the action a
-                # value is 1 if true.
+                # value is 1 if true
                 states_NOR = 0b11111111 - (s|self.next_state[s,a]) # bitwise NOR of state and next_state.
                 rb_down = (states_NOR>>6)%2
                 lb_down = (states_NOR>>4)%2
                 rf_down = (states_NOR>>2)%2
                 lf_down = (states_NOR>>0)%2
+                # evaluate total down
                 total_down = rb_down+lb_down+rf_down+lf_down
-                
-                # evaluate total force.
+                # evaluate total force
                 total_force = leg_rb.reward[s_rb,a_rb] + leg_lb.reward[s_lb,a_lb] + leg_rf.reward[s_rf,a_rf] + leg_lf.reward[s_lf,a_lf]
 
                 # evaluate reward
@@ -55,13 +51,9 @@ class spider_environment:
                     self.reward[s,a] = total_force/total_down
                 elif(total_down==2 and (rb_down*lf_down==1 or lb_down*rf_down==1)):
                     self.reward[s,a] = total_force/total_down
-                    # if(s==0b01001010 and a==0b01011100): print(self.reward[s,a])
+                    # if(s==0b01001010 and a==0b01011100): print(total_force, total_down, self.reward[s,a])
                 else:
                     self.reward[s,a] = 0.25*(total_force/total_down)
-
-
-                 
-
 
 class baby_spider_environment: 
     def __init__(self):
