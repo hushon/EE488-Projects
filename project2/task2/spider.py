@@ -5,7 +5,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from qlearning import *
-from baby_spider_ani import *
+from spider_ani import *
 from spider_env import *
 from wait import *
 
@@ -34,7 +34,7 @@ for j in range(test_max_steps):
     print('%10s %10s %10s %5.2f' % (bin(s[0,j]), bin(a[0,j]), bin(sn[0,j]), r[0,j]))
 print(test_sum_rewards[0])
 
-ani = baby_spider_animation(Q, env, test_max_steps, test_epsilon)
+ani = spider_animation(Q, env, test_max_steps, test_epsilon)
 # uncomment the following to save animation as *.mp4 (don't do plt.show() in that case since otherwise animation will run one more time with possibly different outcome)
 #ani.save('baby_spider.mp4', dpi=200)
 plt.show(block=False)
