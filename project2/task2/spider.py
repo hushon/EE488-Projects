@@ -38,7 +38,7 @@ print("sum of test rewards", test_sum_rewards[0])
 
 ani = spider_animation(Q, env, test_max_steps, test_epsilon)
 # uncomment the following to save animation as *.mp4 (don't do plt.show() in that case since otherwise animation will run one more time with possibly different outcome)
-# ani.save('baby_spider.mp4', dpi=200)
+# ani.save('spider.mp4', dpi=200)
 plt.show(block=False)
 wait('Press enter to quit')
 
