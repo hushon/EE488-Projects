@@ -15,12 +15,6 @@ from qlearning import *
 # environment with 5 states where 3 of them are terminal states (episodic task)
 class linear_environment:
     def __init__(self):
-        # self.n_states = 5       # number of states
-        # self.n_actions = 2      # number of actions
-        # self.next_state = np.array([[1,2],[1,1],[3,4],[3,3],[4,4]], dtype=np.int)    # next_state
-        # self.reward = np.array([[0.,0.],[0.,0.],[1.,0.],[0.,0.],[0.,0.]])            # reward for each (state,action)
-        # self.terminal = np.array([0,1,0,1,1], dtype=np.int)                          # 1 if terminal state, 0 otherwise
-        # self.init_state = 0     # initial state
         self.n_states = 21       # number of states
         self.n_actions = 2      # number of actions
         self.next_state = np.array([[0,0],[0,2],[1,3],[2,4],[3,5],[4,6],[5,7],[6,8],[7,9],[8,10],[9,11],[10,12],[11,13],[12,14],[13,15],[14,16],[15,17],[16,18],[17,19],[18,20],[20,20]], dtype=np.int)    # next_state
