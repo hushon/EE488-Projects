@@ -11,18 +11,20 @@ class spider_environment:
         leg_lb = baby_spider_environment()
         leg_rf = baby_spider_environment()
         leg_lf = baby_spider_environment()
+        bitmask_rb = 0b11000000
+        bitmask_lb = 0b00110000
+        bitmask_rf = 0b00001100
+        bitmask_lf = 0b00000011
         self.n_states = 256
         self.n_actions = 256
-        # self.reward = (leg_rb.reward+leg_lb.reward+leg_rf.reward+leg_lf.reward)/4
         self.reward = np.zeros([self.n_states, self.n_actions])
         self.terminal = np.zeros(self.n_states, dtype=np.int)
-        # self.next_state = 64*leg_rb.next_state + 16*leg_lb.next_state + 4*leg_rf.next_state + leg_lf.next_state
         self.next_state = np.zeros([self.n_states, self.n_actions], dtype=np.int)
         self.init_state = 0b00001010
         for s in range(self.n_states):
             for a in range(self.n_actions):
-                self.next_state[s,a] = leg_rb.next_state[(s&0b11000000)>>6,(a&0b11000000)>>6]<<6 + leg_lb.next_state[(s&0b00110000)>>4,(a&0b00110000)>>4]<<4 + leg_rf.next_state[(s&0b00001100)>>2,(a&0b00001100)>>2]<<2 + leg_lf.next_state[(s&0b00000011),(a&0b00000011)]
-                self.reward[s,a] = 0.25*(leg_rb.reward[(s&0b11000000)>>6,(a&0b11000000)>>6] + leg_lb.reward[(s&0b00110000)>>4,(a&0b00110000)>>4] + leg_rf.reward[(s&0b00001100)>>2,(a&0b00001100)>>2] + leg_lf.reward[(s&0b00000011),(a&0b00000011)])
+                self.next_state[s,a] = (leg_rb.next_state[(s&bitmask_rb)>>6,(a&bitmask_rb)>>6]<<6)+(leg_lb.next_state[(s&bitmask_lb)>>4,(a&bitmask_lb)>>4]<<4)+(leg_rf.next_state[(s&bitmask_rf)>>2,(a&bitmask_rf)>>2]<<2)+(leg_lf.next_state[(s&bitmask_lf),(a&bitmask_lf)])
+                self.reward[s,a] = 0.25*(leg_rb.reward[(s&bitmask_rb)>>6,(a&bitmask_rb)>>6] + leg_lb.reward[(s&bitmask_lb)>>4,(a&bitmask_lb)>>4] + leg_rf.reward[(s&bitmask_rf)>>2,(a&bitmask_rf)>>2] + leg_lf.reward[(s&bitmask_lf),(a&bitmask_lf)])
 
 
 class baby_spider_environment: 
