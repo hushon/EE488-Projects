@@ -24,7 +24,20 @@ class spider_environment:
         for s in range(self.n_states):
             for a in range(self.n_actions):
                 self.next_state[s,a] = (leg_rb.next_state[(s&bitmask_rb)>>6,(a&bitmask_rb)>>6]<<6)+(leg_lb.next_state[(s&bitmask_lb)>>4,(a&bitmask_lb)>>4]<<4)+(leg_rf.next_state[(s&bitmask_rf)>>2,(a&bitmask_rf)>>2]<<2)+(leg_lf.next_state[(s&bitmask_lf),(a&bitmask_lf)])
-                self.reward[s,a] = 0.25*(leg_rb.reward[(s&bitmask_rb)>>6,(a&bitmask_rb)>>6] + leg_lb.reward[(s&bitmask_lb)>>4,(a&bitmask_lb)>>4] + leg_rf.reward[(s&bitmask_rf)>>2,(a&bitmask_rf)>>2] + leg_lf.reward[(s&bitmask_lf),(a&bitmask_lf)])
+                
+                LTACDASDAAAIT = 0b11111111 - (s|self.next_state[s,a]) # bitwise NOR of s and self.next_state[s,a]; indicates legs that are currently down and still down after an action is taken.
+                total_down = (LTACDASDAAAIT>>6)%2 + (LTACDASDAAAIT>>4)%2 + (LTACDASDAAAIT>>2)%2 + (LTACDASDAAAIT)%2
+                total_force = leg_rb.reward[(s&bitmask_rb)>>6,(a&bitmask_rb)>>6] + leg_lb.reward[(s&bitmask_lb)>>4,(a&bitmask_lb)>>4] + leg_rf.reward[(s&bitmask_rf)>>2,(a&bitmask_rf)>>2] + leg_lf.reward[(s&bitmask_lf),(a&bitmask_lf)]
+                if(total_down==0):
+                    self.reward[s,a] = 0
+                elif(total_down>=3):
+                    self.reward[s,a] = total_force/total_down
+                elif(total_down==2):
+                    if((((LTACDASDAAAIT>>4)%2) & ((LTACDASDAAAIT>>2)%2)==1) or (((LTACDASDAAAIT>>6)%2) & ((LTACDASDAAAIT)%2)==1) ):
+                        self.reward[s,a] = total_force/total_down
+                else:
+                    self.reward[s,a] = 0.25*(total_force/total_down)
+                 
 
 
 class baby_spider_environment: 
