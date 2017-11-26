@@ -1,6 +1,4 @@
 # EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
-# Information Theory & Machine Learning Lab, School of EE, KAIST
-# written by Sae-Young Chung, 11/12/2017
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,5 +39,3 @@ ani = spider_animation(Q, env, test_max_steps, test_epsilon)
 # ani.save('spider.mp4', dpi=200)
 plt.show(block=False)
 wait('Press enter to quit')
-
- 

@@ -1,18 +1,9 @@
 # EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
-# Information Theory & Machine Learning Lab, School of EE, KAIST
-# written by Sae-Young Chung, 11/12/2017
 
 import numpy as np
 import matplotlib.pyplot as plt
 from qlearning import *
 
-# state action  next  reward  terminal 
-#   0     up      1      0      Yes
-#   0     down    2      0      No
-#   2     up      3      1      Yes
-#   2     down    4      0      Yes
-
-# environment with 5 states where 3 of them are terminal states (episodic task)
 class linear_environment:
     def __init__(self):
         self.n_states = 21       # number of states
@@ -58,4 +49,3 @@ print("test_n_steps[0]:", test_n_steps[0])
 plt.figure(1)
 plt.plot(np.arange(0, np.size(n_steps)), n_steps)
 plt.show()
-
