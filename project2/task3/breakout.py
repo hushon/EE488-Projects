@@ -42,49 +42,54 @@ env = breakout_environment(5, 8, 3, 1, 2)
 
 sess = tf.InteractiveSession()
 sess.run(tf.global_variables_initializer())
-saver = tf.train.Saver()
+# saver = tf.train.Saver()
 # saver.restore(sess, "./breakout.ckpt")
 
-## define current Q network ##
-lr = 0.001 #learning rate 
-nh = 512 #number of hidden layer neurons
+## define Q network ##
+lr = 0.001 
+nh = 512 
 ni = env.ny*env.nx*env.nf # size of input vector
 no = env.na # size of output vector
 x = tf.placeholder(tf.float32, shape=[None, ni])
 y = tf.placeholder(tf.float32, shape=[None, no])
-
 # Hidden layer
 W_h = tf.Variable(tf.truncated_normal(shape=[ni, nh], stddev=0.1))
 b_h = tf.Variable(tf.truncated_normal(shape=[nh], stddev=0.1))
 h = tf.nn.relu(tf.matmul(x, W_h) + b_h)
-
 # Output layer
 W_o = tf.Variable(tf.truncated_normal(shape=[nh, no], stddev=0.1))
 b_o = tf.Variable(tf.truncated_normal(shape=[no], stddev=0.1))
-y_hat=tf.matmul(h, W_o) + b_o
-
+Q=tf.matmul(h, W_o) + b_o
 # cost function and optimizer
-cost = tf.reduce_mean((y-y_hat)**2)
+cost = tf.reduce_mean((y-Q)**2)
 train_Q = tf.train.AdamOptimizer(lr).minimize(cost)
-sess.run(tf.initialize_all_variables())
+
+## define Q_hat network ##
+x_hat = tf.placeholder(tf.float32, shape=[None, ni])
+W_h_hat = tf.constant(sess.run(W_h))
+b_h_hat = tf.constant(sess.run(b_h))
+h_hat = tf.nn.relu(tf.matmul(x_hat, W_h_hat) + b_h_hat)
+W_o_hat = tf.constant(sess.run(W_o))
+b_o_hat = tf.constant(sess.run(b_o))
+Q_hat=tf.matmul(h_hat, W_o_hat) + b_o_hat
+
 
 # parameters
 epsilon = 0.2 #epsilon-greedy factor
 batch_size = 32 #size of a minibatch
 gamma = 0.99 #discount factor
-
-memory = replayMemory(N=10000)
+C = 100 # target network update frequency
 batch = minibatch()
 
-for episode in range(n_episodes): # for episode=1 through M do:
-	s = env.reset() # initialize sequence s_1={x_1} and preprocessed sequence phi_1=phi(s_1)
-	for t in range(max_steps): #initialize sequence s_1={x_1} and preprocessed sequence phi_1=phi(s_1)
-
-		if (np.random.rand() < epsilon): 
-			a = np.random.randint(env.na) #with probability epsilon select a random action a_t
+memory = replayMemory(N=10000)
+sess.run(tf.initialize_all_variables())
+for episode in range(n_episodes):
+	s = env.reset() 
+	for t in range(max_steps): 
+		if (np.random.rand() < epsilon): #with probability epsilon select a random action a_t
+			a = np.random.randint(env.na)-1
 		else: #otherwise select a_t = argmax(a, Q(phi(s_t), a; theta))
-			q = sess.run(y_hat, feed_dict={x: np.reshape(s, [1, env.ny, env.nx, env.nf])})
-			a = np.random.choice(np.where(q[0]==np.max(q))[0]) 
+			a = np.argmax(Q.run(feed_dict={x: np.reshape(s, [1, env.ny, env.nx, env.nf])}))-1
 
 		sn, r, terminal, _, _, _, _, _, _, _, _ = env.run(a - 1) # action a_t in emulator and observe reward r_t and image x_(t+1)
 		memory.store(s, a, r, sn, terminal)
@@ -95,12 +100,17 @@ for episode in range(n_episodes): # for episode=1 through M do:
 			if(batch.terminal[j]==1):
 				y_j = batch.r[j]
 			else:
-				y_j = batch.r[j] + gamma*Q_hat.run(feed_dict={x: np.reshape(batch.s[j], [1, env.ny, env.nx, env.nf])})
+				y_j = batch.r[j] + gamma*np.max(Q_hat.run(feed_dict={x: np.reshape(batch.s[j], [1, env.ny, env.nx, env.nf])}))
 			y_target = np.append(y_target, y_j)
 		train_Q.run(feed_dict={x: np.reshape(batch.s, [1, env.ny, env.nx, env.nf]), y: y_target})
 
-		every C steps reset Q_hat = Q
+		if(t%C==0):
+			W_h_hat = tf.constant(sess.run(W_h))
+			b_h_hat = tf.constant(sess.run(b_h))
+			W_o_hat = tf.constant(sess.run(W_o))
+			b_o_hat = tf.constant(sess.run(b_o))
 
+		s=np.copy(sn)
 		if(terminal==1): continue # if the episode reached terminal then jump to next episode
 
 
