@@ -8,14 +8,13 @@ from breakout_ani import *
 from wait import *
 
 class replayMemory:
-	def __init__(self, N):
+	def __init__(self):
 		self.current_size = 0
 		self.arr_s = []
 		self.arr_a = []
 		self.arr_r = []
 		self.arr_sn = []
 		self.arr_term = []
-		self.N = N # this does not bound the size of replayMemory
 
 	def store(self, s, a, r, sn, terminal):
 		self.arr_s.append(s)
@@ -24,7 +23,6 @@ class replayMemory:
 		self.arr_sn.append(sn)
 		self.arr_term.append(terminal)
 		self.current_size+=1
-		if(self.current_size>=self.N): print("replay memory current_size:", current_size)
 
 	def next_batch(self, batch_size):
 		items = np.arange(0, self.current_size)
@@ -74,26 +72,30 @@ sess.run(tf.initialize_all_variables()) # initialize Q and Q_hat
 
 ## define Q_hat network ##
 x_hat = tf.placeholder(tf.float32, shape=[None, ni])
-W_h_hat = tf.constant(sess.run(W_h))
-b_h_hat = tf.constant(sess.run(b_h))
+# W_h_hat = tf.constant(sess.run(W_h))
+# b_h_hat = tf.constant(sess.run(b_h))
+W_h_hat = sess.run(W_h)
+b_h_hat = sess.run(b_h)
 h_hat = tf.nn.relu(tf.matmul(x_hat, W_h_hat) + b_h_hat)
-W_o_hat = tf.constant(sess.run(W_o))
-b_o_hat = tf.constant(sess.run(b_o))
+# W_o_hat = tf.constant(sess.run(W_o))
+# b_o_hat = tf.constant(sess.run(b_o))
+W_o_hat = sess.run(W_o)
+b_o_hat = sess.run(b_o)
 Q_hat=tf.matmul(h_hat, W_o_hat) + b_o_hat
 
 
 # parameters
-n_episodes = 1000
-max_steps = 1000
+n_episodes = 2000
+max_steps = 50
 epsilon = 0.2 #epsilon-greedy factor
 batch_size = 32 #size of a minibatch
 gamma = 0.99 #discount factor
-C = 100 # target network update frequency
+C = 5 # target network update frequency
 
 batch = minibatch()
 
-memory = replayMemory(N=10000) # initialize replay memory
-sess.run(tf.initialize_all_variables()) # initialize Q and Q_hat
+memory = replayMemory() # initialize replay memory
+# sess.run(tf.initialize_all_variables()) # initialize Q and Q_hat
 for episode in range(n_episodes):
 	s = env.reset() 
 	for t in range(max_steps): 
@@ -113,21 +115,21 @@ for episode in range(n_episodes):
 			if(batch.terminal[i]==1):
 				a_i = batch.a[i]
 				y_i = batch.r[i]
-				current_Q[a_i] = y_i
 			else:
 				q_i = Q_hat.eval(feed_dict={x_hat: np.reshape(batch.ns[i], [1, env.ny*env.nx*env.nf])})[0]
 				a_i = np.argmax(q_i)
 				y_i = batch.r[i] + gamma*np.max(q_i)
-				current_Q[a_i] = y_i
+			current_Q[a_i] = y_i
 			y_target.append(current_Q)
-		train_Q.run(feed_dict={x: np.reshape(batch.s, [batch.size, env.ny*env.nx*env.nf]), y: np.array(y_target)}) # 이부분 y가 잘못되었는데..
+		train_Q.run(feed_dict={x: np.reshape(batch.s, [batch.size, env.ny*env.nx*env.nf]), y: np.array(y_target)})
 
 		if(t%C==0): # every C steps set Q_hat to Q
-			W_h_hat = tf.constant(sess.run(W_h))
-			b_h_hat = tf.constant(sess.run(b_h))
-			W_o_hat = tf.constant(sess.run(W_o))
-			b_o_hat = tf.constant(sess.run(b_o))
-			print("step:", t, "reward:", r)
+			W_h_hat = sess.run(W_h)
+			b_h_hat = sess.run(b_h)
+			W_o_hat = sess.run(W_o)
+			b_o_hat = sess.run(b_o)
+			print("step:",t)
+			
 
 		s=np.copy(sn)
 		if(terminal==1): break # if the episode reached terminal then jump to next episode
