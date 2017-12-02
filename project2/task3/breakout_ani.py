@@ -76,12 +76,11 @@ class breakout_animation(animation.TimedAnimation):
         nh = 100 # adjust to avoid overfitting
         ni = env.ny*env.nx*env.nf # size of input vector
         no = env.na # size of output vector
-        x = tf.placeholder(tf.float32, shape=[None, ni])
-        y = tf.placeholder(tf.float32, shape=[None, no])
+        self.x = tf.placeholder(tf.float32, shape=[None, ni])
         # Hidden layer
         W_h = tf.get_variable(name='W_h', shape=[ni, nh])
         b_h = tf.get_variable(name='b_h', shape=[nh])
-        h = tf.nn.relu(tf.matmul(x, W_h) + b_h)
+        h = tf.nn.relu(tf.matmul(self.x, W_h) + b_h)
         # Output layer
         W_o = tf.get_variable(name='W_o', shape=[nh, no])
         b_o = tf.get_variable(name='b_o', shape=[no])
@@ -99,7 +98,7 @@ class breakout_animation(animation.TimedAnimation):
             self.iter_obj_cnt -= 1
         if k % self.frames_per_step == 0:
             # self.a = np.random.randint(3) - 1
-            self.a = np.argmax(self.Q.eval(feed_dict={x: np.reshape(self.env.s, [1, self.env.ny*self.env.nx*self.env.nf])})[0]) - 1 ## testing..
+            self.a = np.argmax(self.Q.eval(feed_dict={self.x: np.reshape(self.env.s, [1, self.env.ny*self.env.nx*self.env.nf])})[0]) - 1 ## testing..
             self.p = self.env.p
             self.pn = min(max(self.p + self.a, 0), self.env.nx - 1)
 
