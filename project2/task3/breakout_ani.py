@@ -6,6 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as patches
+import tensorflow as tf
+
+
 
 
 class breakout_animation(animation.TimedAnimation):
@@ -63,13 +66,40 @@ class breakout_animation(animation.TimedAnimation):
         # interval = 50msec
         animation.TimedAnimation.__init__(self, fig, interval=50, repeat=False, blit=False)
 
+        # self.load_network()
+    # def load_network(self):
+        ##===== for Q network ==========
+        tf.reset_default_graph()
+        sess = tf.InteractiveSession()
+
+        lr = 0.001 
+        nh = 100 # adjust to avoid overfitting
+        ni = env.ny*env.nx*env.nf # size of input vector
+        no = env.na # size of output vector
+        x = tf.placeholder(tf.float32, shape=[None, ni])
+        y = tf.placeholder(tf.float32, shape=[None, no])
+        # Hidden layer
+        W_h = tf.get_variable(name='W_h', shape=[ni, nh])
+        b_h = tf.get_variable(name='b_h', shape=[nh])
+        h = tf.nn.relu(tf.matmul(x, W_h) + b_h)
+        # Output layer
+        W_o = tf.get_variable(name='W_o', shape=[nh, no])
+        b_o = tf.get_variable(name='b_o', shape=[no])
+        Q=tf.matmul(h, W_o) + b_o
+
+        saver = tf.train.Saver()
+        saver.restore(sess, "./breakout.ckpt")
+        self.Q = Q
+        ##==============================
+
     def _draw_frame(self, k):
         if self.terminal:
             return
         if k == 0:
             self.iter_obj_cnt -= 1
         if k % self.frames_per_step == 0:
-            self.a = np.random.randint(3) - 1
+            # self.a = np.random.randint(3) - 1
+            self.a = np.argmax(Q.eval(feed_dict={x: np.reshape(env.s, [1, env.ny*env.nx*env.nf])})[0]) - 1 ## testing..
             self.p = self.env.p
             self.pn = min(max(self.p + self.a, 0), self.env.nx - 1)
 
@@ -98,7 +128,8 @@ class breakout_animation(animation.TimedAnimation):
         return iter_obj
 
     def _init_draw(self):
-        _ = self.env.reset()
+        # _ = self.env.reset()
+        self.s = self.env.reset()
         self.sum_reward = 0.
         self.p = self.env.p    # current paddle position
         self.pn = self.p       # next paddle position

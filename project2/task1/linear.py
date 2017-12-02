@@ -17,10 +17,10 @@ class linear_environment:
 # an instance of the environment
 env = linear_environment()
 
-#n_episodes = 1      # number of episodes to run
-#n_episodes = 5      # number of episodes to run
-n_episodes = 100      # number of episodes to run
-#n_episodes = 1000      # number of episodes to run
+n_episodes = 1      # number of episodes to run
+# n_episodes = 5      # number of episodes to run
+# n_episodes = 100      # number of episodes to run
+# n_episodes = 1000      # number of episodes to run
 max_steps = 1000        # max. # of steps to run in each episode
 alpha = 0.2          # learning rate
 gamma = 0.9          # discount factor
@@ -36,8 +36,10 @@ epsilon.dec_step = 0.                  # amount of decrement in each step
 Q, n_steps, sum_rewards = Q_learning_train(env, n_episodes, max_steps, alpha, gamma, epsilon)
 print('Q(s,a): ')
 print(Q)
-for k in range(n_episodes):
-    print('Reward of episode #%2d: %.2f' % (k, sum_rewards[k]))
+# for k in range(n_episodes):
+#     print('Reward of episode #%2d: %.2f' % (k, sum_rewards[k]))
+print("Number of training episodes:", n_episodes)
+print("Avg training steps:", np.mean(n_steps))
 
 test_n_episodes = 1  # number of episodes to run
 test_max_steps = 1000   # max. # of steps to run in each episode
