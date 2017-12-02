@@ -99,7 +99,7 @@ class breakout_animation(animation.TimedAnimation):
             self.iter_obj_cnt -= 1
         if k % self.frames_per_step == 0:
             # self.a = np.random.randint(3) - 1
-            self.a = np.argmax(Q.eval(feed_dict={x: np.reshape(env.s, [1, env.ny*env.nx*env.nf])})[0]) - 1 ## testing..
+            self.a = np.argmax(self.Q.eval(feed_dict={x: np.reshape(self.env.s, [1, self.env.ny*self.env.nx*self.env.nf])})[0]) - 1 ## testing..
             self.p = self.env.p
             self.pn = min(max(self.p + self.a, 0), self.env.nx - 1)
 
