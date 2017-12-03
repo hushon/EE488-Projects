@@ -12,7 +12,10 @@ import tensorflow as tf
 
 
 class breakout_animation(animation.TimedAnimation):
-    def __init__(self, env, max_steps, frames_per_step = 5):
+    def __init__(self, env, max_steps, frames_per_step = 5, nh, depth):
+        self.nh = nh
+        self.depth = depth
+
         self.env = env
         self.max_steps = max_steps
 
@@ -71,10 +74,10 @@ class breakout_animation(animation.TimedAnimation):
         ##===== for Q network ==========
         tf.reset_default_graph()
         sess = tf.InteractiveSession()
-        nh = 40 # adjust to avoid overfitting
+        nh = self.nh # adjust to avoid overfitting
         ni = env.ny*env.nx*env.nf # size of input vector
         no = env.na # size of output vector
-        depth = 16
+        depth = self.depth
         x = tf.placeholder(tf.float32, shape=[None, ni])
         x_image = tf.reshape(x, [-1, env.ny, env.nx, env.nf])
         W_conv = tf.get_variable(name='W_conv', shape=[2, 2, 2, depth])

@@ -9,14 +9,14 @@ from wait import *
 from time import sleep
 
 ## define Q network ##
-lr = 0.2
-nh = 40 # adjust to avoid overfitting
-depth = 16 # number of convolution filter
+lr = 0.00005
+nh = 400 # adjust to avoid overfitting
+depth = 32 # number of convolution filter
 # parameters
-n_episodes = 10
+n_episodes = 200
 max_steps = 100
-epsilon = 0.2 #epsilon-greedy factor
-batch_size = 320 #size of a minibatch
+epsilon = 0.1 #epsilon-greedy factor
+batch_size = 32 #size of a minibatch
 gamma = 0.99 #discount factor
 C = 100 # target network update frequency
 
@@ -185,7 +185,7 @@ for episode in range(n_episodes):
 saver = tf.train.Saver()
 save_path = saver.save(sess, "./breakout.ckpt")
 
-ani = breakout_animation(env, 20)
+ani = breakout_animation(env, 20, nh=nh, depth=depth)
 # ani.save('breakout.mp4', dpi=200)
 plt.show(block=False)
 # wait('Press enter to quit')
