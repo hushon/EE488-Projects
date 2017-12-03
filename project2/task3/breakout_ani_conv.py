@@ -66,20 +66,17 @@ class breakout_animation(animation.TimedAnimation):
         # interval = 50msec
         animation.TimedAnimation.__init__(self, fig, interval=50, repeat=False, blit=False)
 
-        # self.load_network()
 
-
-    def _draw_frame(self, k):
+    def get_Q(self, env):
         ##===== for Q network ==========
-        env = self.env
         tf.reset_default_graph()
         sess = tf.InteractiveSession()
         nh = 40 # adjust to avoid overfitting
         ni = env.ny*env.nx*env.nf # size of input vector
         no = env.na # size of output vector
         depth = 16
-        self.x = tf.placeholder(tf.float32, shape=[None, ni])
-        x_image = tf.reshape(self.x, [-1, env.ny, env.nx, env.nf])
+        x = tf.placeholder(tf.float32, shape=[None, ni])
+        x_image = tf.reshape(x, [-1, env.ny, env.nx, env.nf])
         W_conv = tf.get_variable(name='W_conv', shape=[2, 2, 2, depth])
         b_conv = tf.get_variable(name='b_conv', shape=[depth])
         h_conv = tf.nn.conv2d(x_image, W_conv, strides=[1, 1, 1, 1], padding='VALID')
@@ -93,10 +90,16 @@ class breakout_animation(animation.TimedAnimation):
         W_o = tf.get_variable(name='W_o', shape=[nh, no])
         b_o = tf.get_variable(name='b_o', shape=[no])
         Q=tf.matmul(h, W_o) + b_o
-        self.Q = Q
         saver = tf.train.Saver()
         saver.restore(sess, "./breakout.ckpt")
+
+        return np.argmax(Q.eval(feed_dict={x: np.reshape(env.s, [1, env.ny*env.nx*env.nf])})[0]) - 1 ## testing..
         ##==============================
+
+
+
+    def _draw_frame(self, k):
+
         
         if self.terminal:
             return
@@ -104,7 +107,7 @@ class breakout_animation(animation.TimedAnimation):
             self.iter_obj_cnt -= 1
         if k % self.frames_per_step == 0:
             # self.a = np.random.randint(3) - 1
-            self.a = np.argmax(self.Q.eval(feed_dict={self.x: np.reshape(self.env.s, [1, self.env.ny*self.env.nx*self.env.nf])})[0]) - 1 ## testing..
+            self.a = self.get_Q(self.env)
             self.p = self.env.p
             self.pn = min(max(self.p + self.a, 0), self.env.nx - 1)
 

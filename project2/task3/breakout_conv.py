@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.patches as patches
 from breakout_env import *
-from breakout_ani import *
+from breakout_ani_conv import *
 from wait import *
 from time import sleep
 
