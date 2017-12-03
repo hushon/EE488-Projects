@@ -9,18 +9,16 @@ from wait import *
 from time import sleep
 
 ## define Q network ##
-lr = 0.5 
+lr = 0.2
 nh = 100 # adjust to avoid overfitting
-ni = env.ny*env.nx*env.nf # size of input vector
-no = env.na # size of output vector
-depth = 16 # number of convolution filter
+depth = 32 # number of convolution filter
 # parameters
-n_episodes = 100
+n_episodes = 1000
 max_steps = 100
-epsilon = 0.3 #epsilon-greedy factor
+epsilon = 0.2 #epsilon-greedy factor
 batch_size = 32 #size of a minibatch
 gamma = 0.99 #discount factor
-C = 30 # target network update frequency
+C = 100 # target network update frequency
 
 class replayMemory:
     def __init__(self):
@@ -64,8 +62,8 @@ sess = tf.InteractiveSession()
 ### define Q network ##
 #lr = 0.5 
 #nh = 100 # adjust to avoid overfitting
-#ni = env.ny*env.nx*env.nf # size of input vector
-#no = env.na # size of output vector
+ni = env.ny*env.nx*env.nf # size of input vector
+no = env.na # size of output vector
 #depth = 16 # number of convolution filter
 x = tf.placeholder(tf.float32, shape=[None, ni])
 y = tf.placeholder(tf.float32, shape=[None, no])
@@ -85,11 +83,13 @@ b_h = tf.Variable(name='b_h', initial_value=tf.truncated_normal(shape=[nh], stdd
 # b_h = tf.Variable(tf.random_uniform(shape=[nh], minval=0.0, maxval=0.5))
 h = tf.nn.relu(tf.matmul(h_relu_flat, W_h) + b_h)
 # Output layer
-W_o = tf.Variable(name='W_o', initial_value=tf.ones(shape=[nh, no]))
+W_o = tf.Variable(name='W_o', initial_value=tf.truncated_normal(shape=[nh, no], stddev=0.1))
+#W_o = tf.Variable(name='W_o', initial_value=tf.ones(shape=[nh, no]))
 b_o = tf.Variable(name='b_o', initial_value=tf.ones(shape=[no]))
 # W_o = tf.Variable(tf.random_uniform(shape=[nh, no], minval=0.0, maxval=0.5))
 # b_o = tf.Variable(tf.random_uniform(shape=[no], minval=0.0, maxval=0.5))
-Q=tf.matmul(h, W_o) + b_o
+Q=tf.matmul(h, W_o)
+#Q=tf.matmul(h, W_o) + b_o
 # cost function and optimizer
 cost = tf.reduce_mean((y-Q)**2)
 train_Q = tf.train.AdamOptimizer(lr).minimize(cost)
@@ -112,7 +112,8 @@ h_hat = tf.nn.relu(tf.matmul(h_relu_flat_hat, W_h_hat) + b_h_hat)
 # b_o_hat = tf.constant(sess.run(b_o))
 W_o_hat = sess.run(W_o)
 b_o_hat = sess.run(b_o)
-Q_hat=tf.matmul(h_hat, W_o_hat) + b_o_hat
+Q_hat=tf.matmul(h_hat, W_o_hat)
+#Q_hat=tf.matmul(h_hat, W_o_hat) + b_o_hat
 
 ## parameters
 #n_episodes = 100
@@ -129,7 +130,6 @@ step=0
 for episode in range(n_episodes):
     s = env.reset() 
     episode_reward = 0
-    step+=1
     print("===episode #", episode, "===")
     for t in range(max_steps): 
         if (np.random.rand() < epsilon): #with probability epsilon select a random action a_t
@@ -148,18 +148,25 @@ for episode in range(n_episodes):
         y_target = []
         for i in range(batch.size):
             current_Q = Q.eval(feed_dict={x: np.reshape(batch.s[i], [1, env.ny*env.nx*env.nf])})[0]
+#            print("current_Q",current_Q)
             if(batch.terminal[i]==1):
                 a_i = batch.a[i]
                 y_i = batch.r[i]
             else:
                 q_i = Q_hat.eval(feed_dict={x_hat: np.reshape(batch.ns[i], [1, env.ny*env.nx*env.nf])})[0]
-                a_i = np.argmax(q_i)
+#                a_i = np.argmax(q_i)
+                a_i = batch.a[i]
                 y_i = batch.r[i] + gamma*np.max(q_i)
             current_Q[a_i] = y_i
+#            print("a_i", a_i, "y_i", y_i)
+#            print("current_Q modified",current_Q)
             y_target.append(current_Q)
+        
         train_Q.run(feed_dict={x: np.reshape(batch.s, [batch.size, env.ny*env.nx*env.nf]), y: np.array(y_target)})
-
+        
+        step+=1
         if(step%C==0): # every C steps set Q_hat to Q
+            print("update target network")
             W_conv_hat = sess.run(W_conv)
             b_conv_hat = sess.run(b_conv)
             W_h_hat = sess.run(W_h)
