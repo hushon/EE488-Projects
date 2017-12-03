@@ -161,7 +161,7 @@ for episode in range(n_episodes):
 ## Tensorflow Saver
 saver = tf.train.Saver()
 # saver.restore(sess, "./breakout.ckpt")
-save_path = saver.save(sess, "./breakout.ckpt")
+#save_path = saver.save(sess, "./breakout.ckpt")
 
 # ani = breakout_animation(env, 20)
 # ani.save('breakout.mp4', dpi=200)
