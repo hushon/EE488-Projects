@@ -10,13 +10,13 @@ from time import sleep
 
 ## define Q network ##
 lr = 0.2
-nh = 100 # adjust to avoid overfitting
-depth = 32 # number of convolution filter
+nh = 40 # adjust to avoid overfitting
+depth = 16 # number of convolution filter
 # parameters
-n_episodes = 1000
+n_episodes = 10
 max_steps = 100
 epsilon = 0.2 #epsilon-greedy factor
-batch_size = 32 #size of a minibatch
+batch_size = 320 #size of a minibatch
 gamma = 0.99 #discount factor
 C = 100 # target network update frequency
 
@@ -91,7 +91,7 @@ b_o = tf.Variable(name='b_o', initial_value=tf.ones(shape=[no]))
 Q=tf.matmul(h, W_o)
 #Q=tf.matmul(h, W_o) + b_o
 # cost function and optimizer
-cost = tf.reduce_mean((y-Q)**2)
+cost = tf.reduce_mean(tf.square(y-Q))
 train_Q = tf.train.AdamOptimizer(lr).minimize(cost)
 sess.run(tf.initialize_all_variables()) # initialize Q and Q_hat
 
@@ -166,7 +166,7 @@ for episode in range(n_episodes):
         
         step+=1
         if(step%C==0): # every C steps set Q_hat to Q
-            print("update target network")
+            print("update target network", step)
             W_conv_hat = sess.run(W_conv)
             b_conv_hat = sess.run(b_conv)
             W_h_hat = sess.run(W_h)
@@ -183,10 +183,9 @@ for episode in range(n_episodes):
 
 ## Tensorflow Saver
 saver = tf.train.Saver()
-# saver.restore(sess, "./breakout.ckpt")
-#save_path = saver.save(sess, "./breakout.ckpt")
+save_path = saver.save(sess, "./breakout.ckpt")
 
-# ani = breakout_animation(env, 20)
+ani = breakout_animation(env, 20)
 # ani.save('breakout.mp4', dpi=200)
-# plt.show(block=False)
+plt.show(block=False)
 # wait('Press enter to quit')
