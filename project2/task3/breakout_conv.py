@@ -8,6 +8,20 @@ from breakout_ani import *
 from wait import *
 from time import sleep
 
+## define Q network ##
+lr = 0.5 
+nh = 100 # adjust to avoid overfitting
+ni = env.ny*env.nx*env.nf # size of input vector
+no = env.na # size of output vector
+depth = 16 # number of convolution filter
+# parameters
+n_episodes = 100
+max_steps = 100
+epsilon = 0.3 #epsilon-greedy factor
+batch_size = 32 #size of a minibatch
+gamma = 0.99 #discount factor
+C = 30 # target network update frequency
+
 class replayMemory:
     def __init__(self):
         self.current_size = 0
@@ -47,12 +61,12 @@ class minibatch:
 env = breakout_environment(5, 8, 3, 1, 2)
 
 sess = tf.InteractiveSession()
-## define Q network ##
-lr = 0.5 
-nh = 100 # adjust to avoid overfitting
-ni = env.ny*env.nx*env.nf # size of input vector
-no = env.na # size of output vector
-depth = 16 # number of convolution filter
+### define Q network ##
+#lr = 0.5 
+#nh = 100 # adjust to avoid overfitting
+#ni = env.ny*env.nx*env.nf # size of input vector
+#no = env.na # size of output vector
+#depth = 16 # number of convolution filter
 x = tf.placeholder(tf.float32, shape=[None, ni])
 y = tf.placeholder(tf.float32, shape=[None, no])
 # Convolution layer
@@ -100,31 +114,33 @@ W_o_hat = sess.run(W_o)
 b_o_hat = sess.run(b_o)
 Q_hat=tf.matmul(h_hat, W_o_hat) + b_o_hat
 
-# parameters
-n_episodes = 100
-max_steps = 100
-epsilon = 0.3 #epsilon-greedy factor
-batch_size = 32 #size of a minibatch
-gamma = 0.99 #discount factor
-C = 30 # target network update frequency
+## parameters
+#n_episodes = 100
+#max_steps = 100
+#epsilon = 0.3 #epsilon-greedy factor
+#batch_size = 32 #size of a minibatch
+#gamma = 0.99 #discount factor
+#C = 30 # target network update frequency
 
 batch = minibatch()
 memory = replayMemory() # initialize replay memory
+step=0
 # sess.run(tf.initialize_all_variables()) # initialize Q and Q_hat
 for episode in range(n_episodes):
     s = env.reset() 
     episode_reward = 0
+    step+=1
     print("===episode #", episode, "===")
     for t in range(max_steps): 
         if (np.random.rand() < epsilon): #with probability epsilon select a random action a_t
             a = np.random.randint(env.na)
         else: #otherwise select a_t = argmax(a, Q(phi(s_t), a; theta))
             q = Q.eval(feed_dict={x: np.reshape(s, [1, env.ny*env.nx*env.nf])})
-            print("action-value",q)
+#            print("action-value",q)
             a = np.argmax(q)
             
 
-        print("action",a)
+#        print("action",a)
         sn, r, terminal, _, _, _, _, _, _, _, _ = env.run(a - 1) # action a_t in emulator and observe reward r_t and image x_(t+1)
         memory.store(s, a, r, sn, terminal)
         
@@ -143,7 +159,7 @@ for episode in range(n_episodes):
             y_target.append(current_Q)
         train_Q.run(feed_dict={x: np.reshape(batch.s, [batch.size, env.ny*env.nx*env.nf]), y: np.array(y_target)})
 
-        if(t%C==0): # every C steps set Q_hat to Q
+        if(step%C==0): # every C steps set Q_hat to Q
             W_conv_hat = sess.run(W_conv)
             b_conv_hat = sess.run(b_conv)
             W_h_hat = sess.run(W_h)
