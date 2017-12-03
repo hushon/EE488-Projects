@@ -185,7 +185,7 @@ for episode in range(n_episodes):
 saver = tf.train.Saver()
 save_path = saver.save(sess, "./breakout.ckpt")
 
-ani = breakout_animation(env, 20, nh=nh, depth=depth)
+ani = breakout_animation(env, 20, nh, depth)
 # ani.save('breakout.mp4', dpi=200)
 plt.show(block=False)
 # wait('Press enter to quit')

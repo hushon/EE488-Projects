@@ -12,7 +12,7 @@ import tensorflow as tf
 
 
 class breakout_animation(animation.TimedAnimation):
-    def __init__(self, env, max_steps, frames_per_step = 5, nh, depth):
+    def __init__(self, env, max_steps, nh, depth, frames_per_step = 5):
         self.nh = nh
         self.depth = depth
 
