@@ -64,28 +64,27 @@ class board_game(object):
     def next_move(self, b, state, game_in_progress, net, rn, p, move, nlevels = 1, rw = 0):
         # returns next move by using neural networks
         # this is a parallel version, i.e., returns next moves for multiple games
-        # Input arguments: self,b,state,game_in_progress,net,rn,p,move,nlevels,rw
-        # self: game parameters
-        # b: current board status for multiple games
-        # state: extra state for the board
-        # game_in_progress: 1 if game is in progress, 0 if ended
-        # net: neural network. can be empty (in that case 'rn' should be 1)
-        # rn: randomness in the move, 0: no randomness, 1: pure random
-        #   if rn<0, then the first |rn| moves are random
-        # p: current player (1: black, 2: white)
-        # move: k-th move (1,2,3,...)
-        # nlevels (optional): tree search depth (1,2, or 3). default=1
-        #   if nlevels is even, then 'net' should be the opponent's neural network
-        # rw (optional): randomization in calculating winning probabilities, default=0
+        # Input arguments: b,state,game_in_progress,net,rn,p,move,nlevels,rw
+        #   b: current board states for multiple games
+        #   state: extra states
+        #   game_in_progress: 1 if game is in progress, 0 if ended
+        #   net: neural network. can be empty (in that case 'rn' should be 1)
+        #   rn: if 0 <= rn <= 1, controls randomness in each move (0: no randomness, 1: pure random)
+        #     if rn = -1, -2, ..., then the first |rn| moves are random
+        #   p: current player (1: black, 2: white)
+        #   move: k-th move (1,2,3,...)
+        #   nlevels (optional): tree search depth (1,2, or 3). default=1
+        #     if nlevels is even, then 'net' should be the opponent's neural network
+        #   rw (optional): randomization in calculating winning probabilities, default=0
         # Return values
         # new_board,new_state,valid_moves,wp_max,wp_all,x,y=next_move(b,game_in_progress,net,rn,p,move)
-        #   new_board: updated boards containing new moves
-        #   new_state: update states
+        #   new_board: updated board states containing new moves
+        #   new_state: updated extra states
         #   n_valid_moves: number of valid moves
         #   wp_max: best likelihood of winning
         #   wp_all: likelihood of winning for all possible next moves
-        #   x: x coordinates of next moves
-        #   y: y coordinates of next moves
+        #   x: x coordinates of the next moves in 'new_board'
+        #   y: y coordinates of the next moves in 'new_board'
         
         # board size
         nx = self.nx; ny = self.ny; nxy = nx * ny
@@ -98,11 +97,11 @@ class board_game(object):
             ng=1
         # number of valid moves in each game 
         n_valid_moves = np.zeros((ng))
-        # check whether moves ('nxy' moves) are valid
+        # check whether each of up to 'nxy' moves is valid for each game
         valid_moves = np.zeros((ng, nxy))
-        # win probability for each position on this each game
+        # win probability for each next move
         wp_all = np.zeros((nx, ny, ng))
-        # maximum over wp_all
+        # maximum of wp_all over all possible next moves
         wp_max = -np.ones((ng))
         mx = np.zeros((ng))
         my = np.zeros((ng))
@@ -115,7 +114,7 @@ class board_game(object):
         # total cases to consider in tree search
         ncases = pow(nxy, nlevels)
 
-        # All possible boards after 'b'
+        # maximum possible board states considering 'ncases'
         d = np.zeros((nx, ny, 3, ng * ncases), dtype = np.int32)
 
         for p1 in range(nxy):
@@ -124,16 +123,16 @@ class board_game(object):
             if rmin < 1:
                 valid_moves[:, p1] = vm1
                 if nlevels == 1:
-                    c = 3 - p                     # current player is changed to the next player 
+                    c = 3 - p  # current player is changed to the next player after placing a stone at 'p1'
                     idx = np.arange(ng) + p1 * ng
-                    d[:, :, 0, idx] = (b1 == c)   # current player's stone
-                    d[:, :, 1, idx] = (b1 == 3 - c)  # opponent's stone
-                    d[:, :, 2, idx] = 2 - c       # 1: current player is black, 0: white
+                    d[:, :, 0, idx] = (b1 == c)     # 1 if current player's stone is present, 0 otherwise
+                    d[:, :, 1, idx] = (b1 == 3 - c) # 1 if opponent's stone is present, 0 otherwise
+                    d[:, :, 2, idx] = 2 - c         # 1: current player is black, 0: white
                 else:
                     for p2 in range(nxy):
                         vm2, b2, state2 = self.valid(b1, state1, self.xy(p2), 3 - p)
                         if nlevels == 2:
-                            c = p                 # current player is changed again
+                            c = p                 # current player is changed again after placing a stone at 'p2'
                             idx = np.arange((ng)) + p1 * ng + p2 * ng * nxy
                             d[:, :, 0, idx] = (b2 == c)
                             d[:, :, 1, idx] = (b2 == 3 - c)
@@ -141,21 +140,22 @@ class board_game(object):
                         else:
                             for p3 in range(nxy):
                                 vm3, b3, state3 = self.valid(b2, state2, self.xy(p3), p)
-                                c = 3 - p         # current player is changed again
+                                c = 3 - p         # current player is changed yet again after placing a stone at 'p3'
                                 idx = np.arange(ng) + p1 * ng + p2 * ng * nxy\
                                         + p3 * ng * nxy * nxy
                                 d[:, :, 0, idx] = (b3 == c)
                                 d[:, :, 1, idx] = (b3 == 3 - c)
                                 d[:, :, 2, idx] = 2 - c
 
+        # n_valid_moves is 0 if game is not in progress
         n_valid_moves = n_valid_moves * game_in_progress
 
         # For operations in TensorFlow, load session and graph
         sess = tf.get_default_session()
 
-        # Axis rollaxis for placeholder inputs
+        # d(nx, ny, 3, ng * ncases) becomes d(ng * ncases, nx, ny, 3)
         d = np.rollaxis(d, 3)
-        if rmin < 1: # if not fully random
+        if rmin < 1: # if not fully random, then use the neural network 'net'
             softout = np.zeros((d.shape[0], 3))
             size_minibatch = 1024
             num_batch = np.ceil(d.shape[0] / float(size_minibatch))
@@ -164,19 +164,23 @@ class board_game(object):
                 batch_end = \
                         min((batch_index + 1) * size_minibatch, d.shape[0])
                 indices = range(batch_start, batch_end)
-                feed_dict = {'S:0': d[indices, :, :, :]}
-                softout[indices, :] = sess.run(net, feed_dict = feed_dict)
-            if p == 1:
-                wp = 0.5 * (1 + softout[:, 1] - softout[:, 2])
-            else:
-                wp = 0.5 * (1 + softout[:, 2] - softout[:, 1])
+                feed_dict = {'S:0': d[indices, :, :, :]}  # d[indices,:,:,:] goes to 'S' (neural network input)
+                softout[indices, :] = sess.run(net, feed_dict = feed_dict) # get softmax output from 'net'
+            if p == 1:   # if the current player is black
+                # softout[:,0] is the softmax output for 'tie'
+                # softout[:,1] is the softmax output for 'black win'
+                # softout[:,2] is the softmax output for 'white win'
+                wp = 0.5 * (1 + softout[:, 1] - softout[:, 2])  # estimated win prob. for black
+            else:        # if the current player is white
+                wp = 0.5 * (1 + softout[:, 2] - softout[:, 1])  # estimated win prob. for white
 
-            if rw != 0:
+            if rw != 0:     # this is only for nlevels == 1
+                # add randomness so that greedy action selection to be done later is randomized
                 wp = wp + np.random.rand((ng, 1)) * rw
 
             if nlevels >= 3:
                 wp = np.reshape(wp, (ng, nxy, nxy, nxy))
-                wp = np.amax(wp, axis = 3)
+                wp = np.amax(wp, axis = 3)    
 
             if nlevels >= 2:
                 wp = np.reshape(wp, (ng, nxy, nxy))
@@ -184,12 +188,12 @@ class board_game(object):
 
             wp = np.transpose(np.reshape(wp,(nxy,ng)))
             wp = valid_moves * wp - (1 - valid_moves)
-            wp_i = np.argmax(wp, axis = 1)
-            mxy = self.xy(wp_i) # max position
+            wp_i = np.argmax(wp, axis = 1)  # greedy action selection
+            mxy = self.xy(wp_i)             # convert to (x,y) coordinates
 
             for p1 in range(nxy):
                 pxy = self.xy(p1)
-                wp_all[int(pxy[:, 0]), int(pxy[:, 1]), :] = wp[:, p1]
+                wp_all[int(pxy[:, 0]), int(pxy[:, 1]), :] = wp[:, p1]  # win prob. for each of possible next moves
 
         new_board = np.zeros(b.shape)
         new_board[:, :, :] = b[:, :, :]
@@ -200,10 +204,9 @@ class board_game(object):
             if n_valid_moves[k]: # if there are valid moves
                 if (r[k] < 0 and np.ceil(move / 2.) <= -r[k])\
                         or (r[k] >= 0 and np.random.rand() <= r[k]):
-                # if moves for each player is less than |r[k]| for negative
-                # r[k] or
-                # random number is less than r[k] for positive r[k]
-                # do any random action that is valid
+                    # if r[k]<0, then randomize the next move if # of moves is <= |r[k]|
+                    # if 0<r[k]<=1, then randomize the next move with probability r[k]
+                    # randomization is uniform over all possible valid moves
                     while True:
                         # random position selection
                         rj = np.random.randint(nx)
@@ -226,7 +229,7 @@ class board_game(object):
                     x[k] = mxy[k, 0]
                     y[k] = mxy[k, 1]
 
-            else: # if there is no valid moves
+            else: # if there is no more valid move
                 isvalid, bn, sn = self.valid(b[:, :, [k]], state[:, [k]], -np.ones((1, 2)), p)
                 new_state[:, [k]] = sn
 
@@ -235,21 +238,20 @@ class board_game(object):
 
     def play_games(self, net1, r1, net2, r2, ng, max_time = 0, nargout = 1):
         # plays 'ng' games between two players
-        # optional parameter: max_time (the number of moves per game), nargout (the number of output of play_games)
-        # returns dataset and labels
         # Inputs
-        # self: game parameters
-        # net1: neural network playing black. can be empty (r1 should be 1 if this is empty)
-        # r1: randomness in the move, 0: no randomness, 1: pure random
-        #   if r1<0, then the first |r1| moves are random
-        # net2: neural network playing white. can be empty (r2 should be 1 if this is empty)
-        # r2: randomness in the move, 0: no randomness, 1: pure random
-        #   if r2<0, then the first |r2| moves are random
-        # ng: number of games to play
+        #   net1: neural network playing black. can be empty (r1 should be 1 if net1 is empty)
+        #   r1: if 0 <= r1 <= 1, controls randomness in the next move by player 1 (0: no randomness, 1: pure random)
+        #     if r1 = -1, -2, ..., then the first |r1| moves are random
+        #   net2: neural network playing white. can be empty (r2 should be 1 if net2 is empty)
+        #   r2: if 0 <= r2 <= 1, controls randomness in the next move by player 2 (0: no randomness, 1: pure random)
+        #     if r2 = -1, -2, ..., then the first |r2| moves are random
+        #   ng: number of games to play
+        #   max_time (optional): the max. number of moves per game
+        #   nargout (optional): the number of output arguments
         # Return values
         #   stat=play_games(net1,r1,net2,r2,ng,nargout=1): statistics for net1, stat=[win loss tie]
         #   d,w,wp,stat=play_games(net1,r1,net2,r2,ng,nargout=2,3, or 4)
-        #     d: 4-d matrix of size nx*ny*3*nb containing all moves, where nb is the total number of board configurations
+        #     d: 4-d tensor of size nx*ny*3*nb containing all moves, where nb is the total number of board states
         #     w: nb*1, 0: tie, 1: black wins, 2: white wins
         #     wp (if nargout>=3):  win probabilities for the current player
         #     stat (if nargout==4): statistics for net1, stat=[win loss tie], for net2, swap win & loss
@@ -258,82 +260,86 @@ class board_game(object):
         # board size 
         nx = self.nx; ny = self.ny
 
-        # maximum trials for each game
+        # maximum number of moves in each game
         if max_time <= 0:
             np0 = nx * ny * 2
         else:
             np0 = max_time
 
-        # 'm' possible board configurations
+        # m: max. possible number of board states
         m = np0 * ng
         d = np.zeros((nx, ny, 3, m))
-        pos = np.zeros((nx,ny,m))
         
-        # Check whether tie(0)/black win(1)/white win(2) in all board configurations
+        # game outcome, tie(0)/black win(1)/white win(2), for each board state
         w = np.zeros((m))
 
-        # winning probability: (no work for 1st generation)       
+        # winning probability       
         wp = np.zeros((m))
 
-        # Check whether the configurations are valid for training
+        # 1 means valid as training data, 0 means invalid
         valid_data = np.zeros((m))
 
-        # Check whether the configurations are played by player 1 or player 2
+        # current turn: 1 if black, 2 if white
         turn = np.zeros((m))
 
-        # number of valid moves in previous time step
+        # number of valid moves in the previous move
         vm0 = np.ones((ng))
 
+        # initialize game
         if hasattr(self, 'game_init'): 
             [b, state] = self.game_init(ng)
-        else:
+        else:   # default initialization
             b = np.zeros((nx, ny, ng))
             state = np.zeros((0, ng))
 
         # maximum winning probability for each game
         wp_max = np.zeros((ng))
 
-        # For each time step, check whether game is in progress or not.
+        # 1 if game is in progress, 0 otherwise
         game_in_progress = np.ones((ng))
 
-        # First player: player 1 (black)
+        # first player is black (1)
         p = 1
 
         for k in range(np0):
-            if p == 1:
+            if p == 1:   # if black's turn, use net1 and r1
                 b, state, n_valid_moves, wp_max, _, x_pos, y_pos =\
                     self.next_move(b, state, game_in_progress, net1, r1, p, k)
-            else:
+            else:        # if white's turn, use net2 and r2
                 b, state, n_valid_moves, wp_max, _, x_pos, y_pos =\
                     self.next_move(b, state, game_in_progress, net2, r2, p, k)
 
+            # check if game ended and if winner is decided
             w0, end_game, _, _ = self.winner(b, state)
             idx = np.arange(k * ng, (k + 1) * ng)
             c = 3 - p    # current player is now changed to the next player
-            d[:, :, 0, idx] = (b == c)
-            d[:, :, 1, idx] = (b == 3 - c)
-            d[:, :, 2, idx] = 2 - c
+            d[:, :, 0, idx] = (b == c)      # 1 if current player's stone is present, 0 otherwise
+            d[:, :, 1, idx] = (b == 3 - c)  # 1 if opponent's stone is present, 0 otherwise
+            d[:, :, 2, idx] = 2 - c         # color of current player's stone (1 if black, 0 if white)
             
             wp[idx] = wp_max
+            # valid as training data if game is in progress and if # of valid moves is > 0
             valid_data[idx] = game_in_progress * (n_valid_moves > 0)
             
-            # information about who's the current player
+            # information on the current player
             turn[idx] = p
-            if k>0:
-                for i in range(ng):
-                    if x_pos[i] >= 0:
-                        pos[int(x_pos[i]),int(y_pos[i]),(k-1)*ng+i] = 1
             
+            # update game_in_progress
             game_in_progress *=\
                     ((n_valid_moves > 0) * (end_game == 0) +\
                     ((vm0 + n_valid_moves) > 0) * (end_game == -1))
+            # if end_game==1, game ends
+            # if end_game==0, game ends if no more move is possible for the current player
+            # if end_game==-1, game ends if no moves are possible for both players
 
             number_of_games_in_progress = np.sum(game_in_progress)
             if number_of_games_in_progress == 0:
-                break
+                break   # no games to play
 
-            p = 3 - p
-            vm0 = n_valid_moves[:]
+            p = 3 - p   # change the turn
+            vm0 = n_valid_moves[:]  # preserve 'n_valid_moves'
+                                    # no copying, which is ok since 'n_valid_moves' will be created as
+                                    # a new array in the next step
 
         for k in range(np0):
             idx = np.arange(k * ng, (k + 1) * ng)
@@ -362,20 +368,16 @@ class board_game(object):
         # interactive board game
         # Usage 1)
         # game.play_interactive([],0,[],0): human vs human
-        #   self: game parameters
-        #   net1, net2 must be empty set
-        # Usage 2-1)
+        # Usage 2)
         # game.play_interactive(net1,r1,[],0): computer vs human
-        #   game: game parameters
-        #   net1: neural network, can not be empty (r1 should be 1 if empty)
+        #   net1: neural network, can not be empty (r1 should be 1 if net1 is empty)
         #   r1: randomness for net1
         # Usage 3)
         # game.play_interactive(net1,r1,net2,r2): computer vs computer
-        # (one move at a time when mouse is clicked)
-        #   self: game parameters
-        #   net1: first neural network, can be empty (r1 should be 1 if empty)
+        #   (one move at a time when mouse is clicked)
+        #   net1: first neural network, can be empty (r1 should be 1 if net1 is empty)
         #   r1: randomness for net1
-        #   net2: second neural network, can be empty (r2 should be 1 if empty)
+        #   net2: second neural network, can be empty (r2 should be 1 if net2 is empty)
         #   r2: randomness for net2
 
         nx = self.nx
@@ -624,9 +626,9 @@ class board_game(object):
                 if end_game<0:
                     isvalid,bn,self.state=self.valid(self.b,self.state,np.array([[-1,-1]]),self.turn)
                     if self.turn==1:
-                        print('Black must pass.') # C 2 U
+                        print('Black must pass.')
                     else:
-                        print('White must pass.') # C 2 U
+                        print('White must pass.')
                     self.turn = 3-self.turn
                     self.move +=1
                     if self.number_of_valid_moves(self.b,self.state,self.turn)==0:
@@ -789,25 +791,24 @@ class game1(board_game):
         return b, state
     def winner(self, b, state):
         # Inputs
-        #   b: current board(s), 0: no stone, 1: black, 2: white
-        #   state: state for b
-        #   nargout: number of output arguments (See "Usage".)
+        #   b: current board state, 0: no stone, 1: black, 2: white
+        #   state: extra state
         # Return values
-        #   [r, end_game, s1, s2] = winner(b, state, nargout = ?)
+        #   [r, end_game, s1, s2] = winner(b, state)
         #   r
         #       0: tie
         #       1: black wins
         #       2: white wins
-        #       -- This is the current winner.
-        #       -- This may not be the final winner.
-        #   end_game (optional)
+        #       This is the current winner.
+        #       This may not be the final winner.
+        #   end_game
         #       1 : game ends
         #       0 : game ends if no more move is possible for the current player.
         #       -1: game ends if no move is possible for both players.
-        #   for this game, this will be always zero
-        #   s1 (optional)
+        #   for game1, 'end_game' will be always zero
+        #   s1 
         #       score for black
-        #   s2 (optional)
+        #   s2 
         #       score for white
         ng = b.shape[2]
         nx = self.nx; ny = self.ny
@@ -830,19 +831,18 @@ class game1(board_game):
 
     def valid(self, b, state, xy, p):
         # Check if the move (x,y) is valid.
-        # See winner_simple_go for game rules
         # Inputs
-        #   b: current board(s), 0: no stone, 1: black, 2: white
-        #   state: extra state(s) for game rules
-        #   xy=[xs, ys]: new position(s) (xs and ys are scalar or vector)
-        #   p: current plyaer, 1 or 2 (scalar or vector)
+        #   b: current board state, 0: no stone, 1: black, 2: white
+        #   state: extra state
+        #   xy=[xs, ys]: new position
+        #   p: current plyaer, 1 or 2
         # Return values
-        #   [r,new_board,new_state] = valid_simple_go(b,state,xs,ys,p)
+        #   [r,new_board,new_state] = valid(b,state,[xs,ys],p)
         #   r
         #       1: valid
         #       0: invalid
-        #   new_board (optional): update board
-        #   new_state (optional): update state
+        #   new_board: update board state
+        #   new_state: update extra state
         ng = b.shape[2]
         nx = self.nx; ny = self.ny
 
@@ -853,7 +853,7 @@ class game1(board_game):
             xs = xy[:,0]
             ys = xy[:,1]
 
-        # whether position is valid or not in that game
+        # whether position is valid or not
         r = np.zeros((ng))
         new_board = np.zeros(b.shape)
         new_board[:,:,:] = b[:,:,:] # copy by values
@@ -886,8 +886,8 @@ class game1(board_game):
                     if r[j]:
                         e = np.zeros([nx+2,ny+2]) + p
                         e[1:nx+1,1:ny+1] = b1
-                    # reducing own single-size territory is not allowed unless
-                    # it prevents the opponent from playing there to capture stones
+                        # reducing own single-size territory is not allowed unless
+                        # it prevents the opponent from playing there to capture stones
                         if e[x,y+1] == p and e[x+2,y+1] == p and e[x+1,y] == p\
                                 and e[x+1,y+2] == p:
                             b2[:,:] = b1[:,:]
@@ -1011,17 +1011,17 @@ class game2(board_game):
     def winner(self, b, state):
         # Check who wins for n-mok game
         # Inputs
-        #    self: game parameters
-        #    b: current board(s), 0: no stone, 1: black, 2: white
-        #    state: extr state for b
-        # Usage) [r, end_game, s1, s2]=winner_n_mok(game,b)
+        #    b: current board state, 0: no stone, 1: black, 2: white
+        #    state: extra state
+        # Usage) [r, end_game, s1, s2]=winner(b, state)
         #    r: 0 tie, 1: black wins, 2: white wins
-        #    end_game (optional)
+        #    end_game
         #        if end_game==1, game ends
         #        if end_game==0, game ends if no more move is possible for the current player
         #        if end_game==-1, game ends if no moves are possible for both players
-        #    s1 (optional): score for black
-        #    s2 (optional): score for white
+        #    s1: score for black
+        #    s2: score for white
+
         # total number of games
         ng = b.shape[2]
         n = self.n
@@ -1049,16 +1049,15 @@ class game2(board_game):
     def valid(self, b, state, xy, p):
         # Check if the move (x,y) is valid for a basic game where any empty board position is possible.
         # Inputs
-        #    self: game parameters
-        #    b: current board(s), 0: no stone, 1: black, 2: white
-        #    state: state for b
-        #    xy=[xs, ys]: new position(s) (xs and ys are scalar or vector)
-        #    p: current player, 1 or 2 (scalar or vector)
+        #    b: current board state, 0: no stone, 1: black, 2: white
+        #    state: extra state
+        #    xy=[xs, ys]: new position
+        #    p: current player, 1 or 2
         # Return values
-        #    [r,new_board,new_state]=valid_basic(game,b,state,xs,ys,p)
+        #    [r,new_board,new_state]=valid(b,state,(xs,ys),p)
         #    r: 1 means valid, 0 means invalid
-        #    new_board (optional): updated board
-        #    new_state (optional): update state
+        #    new_board: updated board state
+        #    new_state: updated extra state
         ng = b.shape[2]
         n = self.n
         if len(xy) < ng:
@@ -1068,7 +1067,7 @@ class game2(board_game):
             xs = xy[:, 0]
             ys = xy[:, 1]
 
-        # whether position is valid or not in that game
+        # whether position is valid or not
         r = np.zeros((ng))
         new_board = np.zeros(b.shape)
         new_board[:, :, :] = b[:, :, :] # copy by values
@@ -1079,8 +1078,8 @@ class game2(board_game):
             if x == -1 or y == -1:
                 continue
             if b[x, y, j] == 0: # position is empty in the j-th game
-                r[j] = 1 # check valid
-                new_board[x, y, j] = p # check black or white in new board
+                r[j] = 1
+                new_board[x, y, j] = p 
 
         return r, new_board, state
 
@@ -1094,17 +1093,17 @@ class game3(board_game):
     def winner(self, b, state):
         # Check who wins for n-mok game
         # Inputs
-        #    self: game parameters
-        #    b: current board(s), 0: no stone, 1: black, 2: white
-        #    state: extr state for b
-        # Usage) [r, end_game, s1, s2]=winner_n_mok(game,b)
+        #    b: current board state, 0: no stone, 1: black, 2: white
+        #    state: extra state
+        # Usage) [r, end_game, s1, s2]=winner(b, state)
         #    r: 0 tie, 1: black wins, 2: white wins
-        #    end_game (optional)
+        #    end_game
         #        if end_game==1, game ends
         #        if end_game==0, game ends if no more move is possible for the current player
         #        if end_game==-1, game ends if no moves are possible for both players
-        #    s1 (optional): score for black
-        #    s2 (optional): score for white
+        #    s1: score for black
+        #    s2: score for white
+
         # total number of games
         ng = b.shape[2]
         n = self.n
@@ -1134,16 +1133,15 @@ class game3(board_game):
     def valid(self, b, state, xy, p):
         # Check if the move (x,y) is valid for a basic game where any empty board position is possible.
         # Inputs
-        #    self: game parameters
-        #    b: current board(s), 0: no stone, 1: black, 2: white
-        #    state: state for b
-        #    xy=[xs, ys]: new position(s) (xs and ys are scalar or vector)
-        #    p: current player, 1 or 2 (scalar or vector)
+        #    b: current board state, 0: no stone, 1: black, 2: white
+        #    state: extra state
+        #    xy=[xs, ys]: new position
+        #    p: current player, 1 or 2
         # Return values
-        #    [r,new_board,new_state]=valid_basic(game,b,state,xs,ys,p)
+        #    [r,new_board,new_state]=valid(b,state,(xs,ys),p)
         #    r: 1 means valid, 0 means invalid
-        #    new_board (optional): updated board
-        #    new_state (optional): update state
+        #    new_board: updated board state
+        #    new_state: updated extra state
         ng = b.shape[2]
         n = self.n
 
@@ -1154,7 +1152,7 @@ class game3(board_game):
             xs = xy[:, 0]
             ys = xy[:, 1]
 
-        # whether position is valid or not in that game
+        # whether position is valid or not
         r = np.zeros((ng))
         new_board = np.zeros(b.shape)
         new_board[:, :, :] = b # copy by values
@@ -1165,8 +1163,8 @@ class game3(board_game):
             if x == -1 or y == -1:
                 continue
             if b[x, y, j] == 0: # position is empty in the j-th game
-                r[j] = 1 # check valid
-                new_board[x, y, j] = p # check black or white in new board
+                r[j] = 1 
+                new_board[x, y, j] = p 
 
         return r, new_board, state
 
@@ -1181,13 +1179,13 @@ class game4(board_game):
         self.theme = theme
 
     def game_init(self, ng):
-        # Initialize board for simple go game
+        # Initialize board for Othello
         # Inputs
         #   nx, ny: board size
         #   ng: number of boards
         # Return values
         #   b: board
-        #   state: state for b
+        #   state: extra state
         if self.nx < 3 or self.ny < 3:
             raise Exception('Board is too small')
 
@@ -1203,26 +1201,25 @@ class game4(board_game):
         return b, state
 
     def winner(self, b, state):
-        # Check who wins for othello game.
+        # Check who wins for Othello
         # Inputs
-        #   b: current board(s), 0: no stone, 1: black, 2: white
-        #   state: extr state for b
-        #   nargout: number of output arguments (See "Usage".) 
+        #   b: current board state, 0: no stone, 1: black, 2: white
+        #   state: extra state
         # Return values
-        #   [r, end_game, s1, s2] = winner(b, state, nargout = ?)
+        #   [r, end_game, s1, s2] = winner(b, state)
         #   r
         #       0: tie,
         #       1: black wins
         #       2: white wins
-        #       -- This is the current winner.
-        #       -- This may not be the final winner.
-        #   end_game (optional)
+        #       This is the current winner.
+        #       This may not be the final winner.
+        #   end_game
         #       1 : game ends
         #       0 : game ends if no more move is possible for the current player.
         #       -1: game ends if no move is possible for both players. 
-        #   s1 (optional)
+        #   s1
         #       score for black
-        #   s2 (optional)
+        #   s2
         #       score for white
         ng = b.shape[2]
         r = np.zeros((ng))
@@ -1246,26 +1243,22 @@ class game4(board_game):
         # retures -1, otherwise.
 
     def valid(self, b, state, xy, p):
-        # Check if the move (x,y) is valid for othello game.
+        # Check if the move (x,y) is valid for Othello
         # Inputs
-        #   game: game parameters
-        #   b: current board(s)
+        #   b: current board state
         #       0: no stone
         #       1: black
         #       2: white
-        #   state: state for b
-        #   xy = [xs, ys]: new position(s) (xs and ys are scalar or vector)
-        #   p: current player
-        #       1: scalar
-        #       2: vector
-        #   nargout: number of output arguments (See "Usage".) 
+        #   state: extra state
+        #   xy = [xs, ys]: new position
+        #   p: current player, 1 or 2
         # Return values
-        #   [r, new_board, new_state] = valid(b, state, xy, p, nargout = ?)
+        #   [r, new_board, new_state] = valid(b, state, xy, p)
         #   r
         #       1: valid
         #       0: invalid
-        #   new_board (optional): updated board
-        #   new_state (optional): updated state
+        #   new_board: updated board state
+        #   new_state: updated extra state
         ng = b.shape[2]
 
         if len(xy) < ng:
@@ -1275,7 +1268,7 @@ class game4(board_game):
             xs = xy[:, 0]
             ys = xy[:, 1]
 
-        # whether position is valid or not in that game
+        # whether position is valid or not
         r = np.zeros((ng))
         new_board = np.zeros(b.shape)
         b1 = np.zeros((b.shape[0], b.shape[1]))
