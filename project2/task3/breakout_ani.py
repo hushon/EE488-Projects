@@ -12,7 +12,10 @@ import tensorflow as tf
 
 
 class breakout_animation(animation.TimedAnimation):
-    def __init__(self, env, max_steps, frames_per_step = 5):
+    def __init__(self, env, max_steps, nh, depth, frames_per_step = 5):
+        self.nh = nh
+        self.depth = depth
+
         self.env = env
         self.max_steps = max_steps
 
@@ -66,39 +69,48 @@ class breakout_animation(animation.TimedAnimation):
         # interval = 50msec
         animation.TimedAnimation.__init__(self, fig, interval=50, repeat=False, blit=False)
 
-        # self.load_network()
-    # def load_network(self):
+
+    def get_Q(self, env):
         ##===== for Q network ==========
         tf.reset_default_graph()
         sess = tf.InteractiveSession()
-
-        lr = 0.001 
-        nh = 100 # adjust to avoid overfitting
+        nh = self.nh # adjust to avoid overfitting
         ni = env.ny*env.nx*env.nf # size of input vector
         no = env.na # size of output vector
-        self.x = tf.placeholder(tf.float32, shape=[None, ni])
+        depth = self.depth
+        x = tf.placeholder(tf.float32, shape=[None, ni])
+        x_image = tf.reshape(x, [-1, env.ny, env.nx, env.nf])
+        W_conv = tf.get_variable(name='W_conv', shape=[2, 2, 2, depth])
+        b_conv = tf.get_variable(name='b_conv', shape=[depth])
+        h_conv = tf.nn.conv2d(x_image, W_conv, strides=[1, 1, 1, 1], padding='VALID')
+        h_relu = tf.nn.relu(h_conv + b_conv)
+        h_relu_flat = tf.reshape(h_relu, [-1, 7*4*depth])
         # Hidden layer
-        W_h = tf.get_variable(name='W_h', shape=[ni, nh])
+        W_h = tf.get_variable(name='W_h', shape=[7*4*depth, nh])
         b_h = tf.get_variable(name='b_h', shape=[nh])
-        h = tf.nn.relu(tf.matmul(self.x, W_h) + b_h)
+        h = tf.nn.relu(tf.matmul(h_relu_flat, W_h) + b_h)
         # Output layer
         W_o = tf.get_variable(name='W_o', shape=[nh, no])
         b_o = tf.get_variable(name='b_o', shape=[no])
         Q=tf.matmul(h, W_o) + b_o
-
         saver = tf.train.Saver()
         saver.restore(sess, "./breakout.ckpt")
-        self.Q = Q
+
+        return np.argmax(Q.eval(feed_dict={x: np.reshape(env.s, [1, env.ny*env.nx*env.nf])})[0]) - 1 ## testing..
         ##==============================
 
+
+
     def _draw_frame(self, k):
+
+        
         if self.terminal:
             return
         if k == 0:
             self.iter_obj_cnt -= 1
         if k % self.frames_per_step == 0:
             # self.a = np.random.randint(3) - 1
-            self.a = np.argmax(self.Q.eval(feed_dict={self.x: np.reshape(self.env.s, [1, self.env.ny*self.env.nx*self.env.nf])})[0]) - 1 ## testing..
+            self.a = self.get_Q(self.env)
             self.p = self.env.p
             self.pn = min(max(self.p + self.a, 0), self.env.nx - 1)
 

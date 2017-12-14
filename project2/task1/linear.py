@@ -17,10 +17,10 @@ class linear_environment:
 # an instance of the environment
 env = linear_environment()
 
-n_episodes = 1      # number of episodes to run
+#n_episodes = 1      # number of episodes to run
 # n_episodes = 5      # number of episodes to run
-# n_episodes = 100      # number of episodes to run
-# n_episodes = 1000      # number of episodes to run
+#n_episodes = 100      # number of episodes to run
+n_episodes = 1000      # number of episodes to run
 max_steps = 1000        # max. # of steps to run in each episode
 alpha = 0.2          # learning rate
 gamma = 0.9          # discount factor
