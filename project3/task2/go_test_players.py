@@ -87,6 +87,9 @@ for i in range(2):
 N_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network/")
 N0_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network0/")
 N1_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network1/")
+N2_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network2/")
+N3_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network3/")
+N4_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network4/")
 
 ### SAVER ###
 saver = tf.train.Saver(N_variables)
@@ -105,18 +108,37 @@ with tf.Session() as sess:
     saver.restore(sess, "./go_gen1.ckpt")
     for i in range(len(N_variables)):
         sess.run(tf.assign(N1_variables[i], N_variables[i]))
+    saver.restore(sess, "./go_gen2.ckpt")
+    for i in range(len(N_variables)):
+        sess.run(tf.assign(N2_variables[i], N_variables[i]))
+    saver.restore(sess, "./go_gen3.ckpt")
+    for i in range(len(N_variables)):
+        sess.run(tf.assign(N3_variables[i], N_variables[i]))
+    saver.restore(sess, "./go_gen4.ckpt")
+    for i in range(len(N_variables)):
+        sess.run(tf.assign(N4_variables[i], N_variables[i]))
     N0 = tf.get_default_graph().get_tensor_by_name("network0/softmax:0")
     N1 = tf.get_default_graph().get_tensor_by_name("network1/softmax:0")
-    s = game.play_games(N0, r_none, N0, r_none, n_test, nargout = 1)
-    win=s[0][0]; loss=s[0][1]; tie=s[0][2]
-    print('net1 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
-    s = game.play_games(N0, r_none, N1, r_none, n_test, nargout = 1)
-    win=s[0][0]; loss=s[0][1]; tie=s[0][2]
-    print('net1 (black) against net2 (white): win %d, loss %d, tie %d' % (win, loss, tie))
-    s = game.play_games(N1, r_none, N1, r_none, n_test, nargout = 1)
-    win=s[0][0]; loss=s[0][1]; tie=s[0][2]
-    print('net2 (black) against net2 (white): win %d, loss %d, tie %d' % (win, loss, tie))
-    s = game.play_games(N1, r_none, N0, r_none, n_test, nargout = 1)
-    win=s[0][0]; loss=s[0][1]; tie=s[0][2]
-    print('net2 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
+    N2 = tf.get_default_graph().get_tensor_by_name("network2/softmax:0")
+    N3 = tf.get_default_graph().get_tensor_by_name("network3/softmax:0")
+    N4 = tf.get_default_graph().get_tensor_by_name("network4/softmax:0")
+    # s = game.play_games(N0, r_none, N0, r_none, n_test, nargout = 1)
+    # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+    # print('net1 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
+    # s = game.play_games(N0, r_none, N1, r_none, n_test, nargout = 1)
+    # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+    # print('net1 (black) against net2 (white): win %d, loss %d, tie %d' % (win, loss, tie))
+    # s = game.play_games(N1, r_none, N1, r_none, n_test, nargout = 1)
+    # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+    # print('net2 (black) against net2 (white): win %d, loss %d, tie %d' % (win, loss, tie))
+    # s = game.play_games(N1, r_none, N0, r_none, n_test, nargout = 1)
+    # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+    # print('net2 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
+    for i in range(5):
+        for j in range(5):
+            Ni = (N0,N1,N2,N3,N4)[i]
+            Nj = (N0,N1,N2,N3,N4)[j]
+            s = game.play_games(Ni, r_none, Nj, r_none, n_test, nargout = 1)
+            win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+            print('net%d (black) against net%d (white): win %d, loss %d, tie %d' % (i, j, win, loss, tie))
 
