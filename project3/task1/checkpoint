@@ -1,0 +1,2 @@
+model_checkpoint_path: "tictactoe_gen1.ckpt"
+all_model_checkpoint_paths: "tictactoe_gen1.ckpt"
