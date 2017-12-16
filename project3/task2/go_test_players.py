@@ -101,10 +101,10 @@ with tf.Session() as sess:
     r_none = np.zeros((n_test))
     for j in range(5):
         for k in range (5):
-            saver.restore(sess, "./go_gen"+str(j)+".ckpt")
+            saver.restore(sess, "./project3_task2_gen"+str(j)+".ckpt")
             for i in range(len(N_variables)):
                 sess.run(tf.assign(N0_variables[i], N_variables[i]))
-            saver.restore(sess, "./go_gen"+str(k)+".ckpt")
+            saver.restore(sess, "./project3_task2_gen"+str(k)+".ckpt")
             for i in range(len(N_variables)):
                 sess.run(tf.assign(N1_variables[i], N_variables[i]))
             N0 = tf.get_default_graph().get_tensor_by_name("network0/softmax:0")
