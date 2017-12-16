@@ -25,7 +25,7 @@ alpha = 0.001
 # size of minibatch
 size_minibatch = 1024
 # training epoch
-max_epoch = 10
+max_epoch = 40
 # number of training steps for each generation
 # n_train_list = [2000, 5000]
 # n_test_list = [1000, 1000]
