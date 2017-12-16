@@ -17,40 +17,6 @@ from boardgame import game1, game2, game3, game4, data_augmentation
 # Choose game Go
 game = game1()
 
-#####################################################################
-"""                    DEFINE HYPERPARAMETERS                     """
-#####################################################################
-# Initial Learning Rate
-alpha = 0.001
-# size of minibatch
-size_minibatch = 1024
-# training epoch
-max_epoch = 10
-# number of training steps for each generation
-# n_train_list = [2000, 5000]
-# n_test_list = [1000, 1000]
-n_train_list = [5000, 10000, 20000, 40000, 80000]
-n_test_list = [1000, 1000, 1000, 1000, 1000]
-
-#####################################################################
-"""                COMPUTATIONAL GRAPH CONSTRUCTION               """
-#####################################################################
-
-### DEFINE OPTIMIZER ###
-def network_optimizer(Y, Y_, alpha, scope):
-    # Cross entropy loss
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits = Y, labels = Y_))
-    # Parameters in this scope
-    variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = scope)
-    # L2 regularization
-    for i in range(len(variables)):
-        loss += 0.0001 * tf.nn.l2_loss(variables[i])
-    # Optimizer
-    optimizer = tf.train.AdamOptimizer(alpha).minimize(loss,\
-            var_list = variables)
-    return loss, optimizer
-
-
 ### NETWORK ARCHITECTURE ###
 def network(state, nx, ny):
     # Set variable initializers
@@ -97,109 +63,62 @@ def network(state, nx, ny):
     return tf.matmul(out1fc, weights2fc) + biases2fc
 
 
-# Input
+# Input (common for all networks)
 S = tf.placeholder(tf.float32, shape = [None, game.nx, game.ny, 3], name = "S")
 
-# Define network
+# temporary network for loading from .ckpt
 scope = "network"
 with tf.variable_scope(scope):
     # Estimation for unnormalized log probability
     Y = network(S, game.nx, game.ny) 
     # Estimation for probability
     P = tf.nn.softmax(Y, name = "softmax")
-    # Target in integer
-    W = tf.placeholder(tf.int32, shape = [None], name = "W")
-    # Target in one-hot vector
-    Y_= tf.one_hot(W, 3, name = "Y_")
-    # Define loss and optimizer for value network
-    loss, optimizer = network_optimizer(Y, Y_, alpha, scope)
+
+# network0 for black
+# network1 for white
+for i in range(2):
+    scope = "network" + str(i)
+    with tf.variable_scope(scope):
+        # Estimation for unnormalized log probability
+        Y = network(S, game.nx, game.ny) 
+        # Estimation for probability
+        P = tf.nn.softmax(Y, name = "softmax")
+
+N_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network/")
+N0_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network0/")
+N1_variables = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope = "network1/")
 
 ### SAVER ###
-saver = tf.train.Saver(max_to_keep = 0)
-
-#####################################################################
-"""                 TRAINING AND TESTING NETWORK                  """
-#####################################################################
+saver = tf.train.Saver(N_variables)
 
 with tf.Session() as sess:
     ### DEFAULT SESSION ###
     sess.as_default()
 
-    win1 = []; lose1 = []; tie1 = [];
-    win2 = []; lose2 = []; tie2 = [];
- 
     ### VARIABLE INITIALIZATION ###
     sess.run(tf.global_variables_initializer())
-    
-    for generation in range(len(n_train_list)):
-        print("Generating training data for generation %d" % generation)
-                
-        if generation == 0:
-            # number of games to play for training
-            n_train = n_train_list[generation] 
-            # number of games to play for testing
-            n_test = n_test_list[generation]
-            # randomness for all games
-            r1 = np.ones((n_train)) # randomness for player 1 for all games
-            r2 = np.ones((n_train)) # randomness for player 2 for all games
-            [d, w] = game.play_games([], r1, [], r2, n_train, nargout = 2)
-        else:
-            # Play 'ng' games between two players using the previous
-            # generation value network 
-            # introduce randomness in moves for robustness
-            n_train = n_train_list[generation] # number of games to play for training
-            n_test = n_test_list[generation]   # number of games to play for testing
-            mt = game.nx * game.ny // 2
-            r1r = np.random.rand(n_train, 1)
-            r2r = np.random.rand(n_train, 1)
-            r1k = np.random.randint(mt * 2, size = (n_train, 1))
-            r2k = np.random.randint(mt * 2, size = (n_train, 1))
-            r1 = (r1k > mt) * r1r + (r1k <= mt) * (-r1k)
-            r2 = (r2k > mt) * r2r + (r2k <= mt) * (-r2k)
-            [d, w] = game.play_games(P, r1, P, r2, n_train, nargout = 2)
-
-        # Data augmentation
-        print("Data augmentation")
-        [d, w, _] = data_augmentation(d, w, [])
-        d = np.rollaxis(d, 3)
-        
-        iteration = 0
-        print("Start training")
-        # Train the next generation value network
-        for epoch in range(max_epoch):
-            # random shuffling
-            data_index = np.arange(len(w))
-            np.random.shuffle(data_index) 
-            num_batch = np.ceil(len(data_index) / float(size_minibatch))
-            for batch_index in range(int(num_batch)):
-                batch_start = batch_index * size_minibatch
-                batch_end = min((batch_index + 1) * size_minibatch, len(data_index))
-                indices = data_index[np.arange(batch_start, batch_end)]
-                feed_dict = {S: d[indices, :, :, :], W: w[indices]}
-                sess.run(optimizer, feed_dict = feed_dict)
-                iteration += 1
-                if iteration % 100 == 99:
-                    print("Epoch: %3d\t Iteration: %6d\t Loss: %10.5f" %\
-                        (epoch, iteration, sess.run(loss, feed_dict = feed_dict)))
-
-        # Save session.
-        saver.save(sess, "./project3_task2_gen" + str(generation) + ".ckpt")
-        # Load session
-        # saver.restore(sess, "./go_gen" + str(generation) + ".ckpt")
-
-        print("Evaluating generation %d neural network against random policy" % generation)
-    
-        r1 = np.zeros((n_test)) # randomness for player 1
-        r2 = np.ones((n_test))  # randomness for player 2
-        s = game.play_games(P, r1, [], r2, n_test, nargout = 1)
-        win1.append(s[0][0]); lose1.append(s[0][1]); tie1.append(s[0][2]);
-        print(" net plays black: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
-            (win1[generation], lose1[generation], tie1[generation]))
-    
-        r1 = np.ones((n_test))  # randomness for player 1
-        r2 = np.zeros((n_test)) # randomness for player 2
-        s = game.play_games([], r1, P, r2, n_test, nargout = 1)
-        win2.append(s[0][1]); lose2.append(s[0][0]); tie2.append(s[0][2]);
-        print(" net plays white: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
-            (win2[generation], lose2[generation], tie2[generation]))
+    n_test = 1
+    r_none = np.zeros((n_test))
+    for j in range(5):
+        for k in range (5):
+            saver.restore(sess, "./project3_task2_gen"+str(j)+".ckpt")
+            for i in range(len(N_variables)):
+                sess.run(tf.assign(N0_variables[i], N_variables[i]))
+            saver.restore(sess, "./project3_task2_gen"+str(k)+".ckpt")
+            for i in range(len(N_variables)):
+                sess.run(tf.assign(N1_variables[i], N_variables[i]))
+            N0 = tf.get_default_graph().get_tensor_by_name("network0/softmax:0")
+            N1 = tf.get_default_graph().get_tensor_by_name("network1/softmax:0")
+            # s = game.play_games(N0, r_none, N0, r_none, n_test, nargout = 1)
+            # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+            # print('net1 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
+            s = game.play_games(N0, r_none, N1, r_none, n_test, nargout = 1)
+            win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+            print('net%s (black) against net%s (white): win %d, loss %d, tie %d' % (str(j), str(k), win, loss, tie))
+            # s = game.play_games(N1, r_none, N1, r_none, n_test, nargout = 1)
+            # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+            # print('net2 (black) against net2 (white): win %d, loss %d, tie %d' % (win, loss, tie))
+            # s = game.play_games(N1, r_none, N0, r_none, n_test, nargout = 1)
+            # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
+            # print('net2 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
 
