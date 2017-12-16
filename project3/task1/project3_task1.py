@@ -172,7 +172,7 @@ with tf.Session() as sess:
                         (epoch, iteration, sess.run(loss, feed_dict = feed_dict)))
 
         # Save session.
-        saver.save(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
+        #saver.save(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
         # Load session
         #saver.restore(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
 
@@ -191,4 +191,7 @@ with tf.Session() as sess:
         win2.append(s[0][1]); lose2.append(s[0][0]); tie2.append(s[0][2]);
         print(" net plays white: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
             (win2[generation], lose2[generation], tie2[generation]))
+
+    saver.save(sess, "./project3_task1.ckpt")
+
 
