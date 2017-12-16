@@ -109,16 +109,6 @@ with tf.Session() as sess:
                 sess.run(tf.assign(N1_variables[i], N_variables[i]))
             N0 = tf.get_default_graph().get_tensor_by_name("network0/softmax:0")
             N1 = tf.get_default_graph().get_tensor_by_name("network1/softmax:0")
-            # s = game.play_games(N0, r_none, N0, r_none, n_test, nargout = 1)
-            # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
-            # print('net1 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
             s = game.play_games(N0, r_none, N1, r_none, n_test, nargout = 1)
             win=s[0][0]; loss=s[0][1]; tie=s[0][2]
             print('net%s (black) against net%s (white): win %d, loss %d, tie %d' % (str(j), str(k), win, loss, tie))
-            # s = game.play_games(N1, r_none, N1, r_none, n_test, nargout = 1)
-            # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
-            # print('net2 (black) against net2 (white): win %d, loss %d, tie %d' % (win, loss, tie))
-            # s = game.play_games(N1, r_none, N0, r_none, n_test, nargout = 1)
-            # win=s[0][0]; loss=s[0][1]; tie=s[0][2]
-            # print('net2 (black) against net1 (white): win %d, loss %d, tie %d' % (win, loss, tie))
-
