@@ -183,7 +183,7 @@ with tf.Session() as sess:
                         (epoch, iteration, sess.run(loss, feed_dict = feed_dict)))
 
         # Save session.
-        saver.save(sess, "./go_gen" + str(generation) + ".ckpt")
+        saver.save(sess, "./project3_task2_gen" + str(generation) + ".ckpt")
         # Load session
         # saver.restore(sess, "./go_gen" + str(generation) + ".ckpt")
 
