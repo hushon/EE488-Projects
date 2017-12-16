@@ -23,13 +23,13 @@ game = game1()
 # Initial Learning Rate
 alpha = 0.001
 # size of minibatch
-size_minibatch = 1024
+size_minibatch = 2048
 # training epoch
 max_epoch = 10
 # number of training steps for each generation
 # n_train_list = [2000, 5000]
 # n_test_list = [1000, 1000]
-n_train_list = [2000, 5000, 8000, 11000, 14000]
+n_train_list = [2000, 5000, 10000, 20000, 40000]
 n_test_list = [1000, 1000, 1000, 1000, 1000]
 
 #####################################################################
