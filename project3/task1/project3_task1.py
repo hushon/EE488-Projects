@@ -121,7 +121,7 @@ with tf.Session() as sess:
     ### VARIABLE INITIALIZATION ###
     sess.run(tf.global_variables_initializer())
     
-    for generation in range(len(n_train_list)):
+    # for generation in range(len(n_train_list)):
         # print("Generating training data for generation %d" % generation)                
         # if generation == 0:
         #     # number of games to play for training
@@ -174,24 +174,25 @@ with tf.Session() as sess:
         # Save session.
         #saver.save(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
         # Load session
-        saver.restore(sess, "./project3_task1.ckpt")
+    saver.restore(sess, "./project3_task1.ckpt")
 
-        print("Evaluating generation %d neural network against itself" % generation)
-    
-        r1 = np.zeros((n_test)) # randomness for player 1
-        r2 = np.zeros((n_test))  # randomness for player 2
-        s = game.play_games(P, r1, P, r2, n_test, nargout = 1)
-        win1.append(s[0][0]); lose1.append(s[0][1]); tie1.append(s[0][2]);
-        print(" net plays black: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
-            (win1[generation], lose1[generation], tie1[generation]))
-    
-        r1 = np.ones((n_test))  # randomness for player 1
-        r2 = np.zeros((n_test)) # randomness for player 2
-        s = game.play_games([], r1, P, r2, n_test, nargout = 1)
-        win2.append(s[0][1]); lose2.append(s[0][0]); tie2.append(s[0][2]);
-        print(" net plays white: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
-            (win2[generation], lose2[generation], tie2[generation]))
+    print("Evaluating neural network against itself")
+    generation = 0
+    n_test = n_test_list[generation]
+    r1 = np.zeros((n_test)) # randomness for player 1
+    r2 = np.zeros((n_test))  # randomness for player 2
+    s = game.play_games(P, r1, P, r2, n_test, nargout = 1)
+    win1.append(s[0][0]); lose1.append(s[0][1]); tie1.append(s[0][2]);
+    print(" net plays black: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
+        (win1[generation], lose1[generation], tie1[generation]))
 
-    saver.save(sess, "./project3_task1.ckpt")
+    r1 = np.ones((n_test))  # randomness for player 1
+    r2 = np.zeros((n_test)) # randomness for player 2
+    s = game.play_games([], r1, P, r2, n_test, nargout = 1)
+    win2.append(s[0][1]); lose2.append(s[0][0]); tie2.append(s[0][2]);
+    print(" net plays white: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
+        (win2[generation], lose2[generation], tie2[generation]))
+
+    # saver.save(sess, "./project3_task1.ckpt")
 
 
