@@ -1,23 +1,10 @@
-﻿# EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
-# Information Theory & Machine Learning Lab, School of EE, KAIST
-#
-# Revision history
-# Originally written in Matlab by Sae-Young Chung in Apr. 2016
-#   for EE405C Electronics Design Lab <Network of Smart Systems>, Spring 2016
-# Python & TensorFlow porting by Wonseok Jeon, Narae Ryu, Hwehee Chung in Dec. 2016
-#   for EE488C Special Topics in EE <Deep Learning and AlphaGo>, Fall 2016
-# Revised by Sae-Young Chung, 2017/12/07
-#   for EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
-
-
-import tensorflow as tf
+﻿import tensorflow as tf
 import numpy as np
 from boardgame import game1, game2, game3, game4, data_augmentation
 
 # Choose game Go
 game = game1()
 
-<<<<<<< HEAD
 #####################################################################
 """                    DEFINE HYPERPARAMETERS                     """
 #####################################################################
@@ -52,8 +39,6 @@ def network_optimizer(Y, Y_, alpha, scope):
     return loss, optimizer
 
 
-=======
->>>>>>> 848d373395cd32f1c074e522b049b0adfd13fadb
 ### NETWORK ARCHITECTURE ###
 def network(state, nx, ny):
     # Set variable initializers
