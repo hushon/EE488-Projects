@@ -23,12 +23,12 @@ game = game2()
 # Initial Learning Rate
 alpha = 0.001
 # size of minibatch
-size_minibatch = 2048
+size_minibatch = 1024
 # training epoch
-max_epoch = 100
+max_epoch = 10
 # number of training steps for each generation
-n_train_list = [10000, 50000]
-n_test_list = [1000, 1000]
+n_train_list = [5000, 25000, 50000]
+n_test_list = [1000, 1000, 1000]
 
 ####################################################################
 """                COMPUTATIONAL GRAPH CONSTRUCTION               """
