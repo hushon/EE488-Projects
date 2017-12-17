@@ -174,7 +174,7 @@ with tf.Session() as sess:
         # Save session.
         #saver.save(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
         # Load session
-        saver.restore(sess, "./project3_task1_gen" + str(generation) + ".ckpt")
+        saver.restore(sess, "./project3_task1.ckpt")
 
         print("Evaluating generation %d neural network against itself" % generation)
     
