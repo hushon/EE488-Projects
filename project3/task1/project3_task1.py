@@ -194,13 +194,15 @@ with tf.Session() as sess:
         (win2[generation], lose2[generation], tie2[generation]))
 
     print("Evaluating neural network against random policy")
+    generation = 1
+    n_test = n_test_list[generation]
     r1 = np.zeros((n_test)) # randomness for player 1
     r2 = np.ones((n_test))  # randomness for player 2
     s = game.play_games(P, r1, [], r2, n_test, nargout = 1)
     win1.append(s[0][0]); lose1.append(s[0][1]); tie1.append(s[0][2]);
     print(" net plays black: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
         (win1[generation], lose1[generation], tie1[generation]))
-        
+
     r1 = np.ones((n_test))  # randomness for player 1
     r2 = np.zeros((n_test)) # randomness for player 2
     s = game.play_games([], r1, P, r2, n_test, nargout = 1)
