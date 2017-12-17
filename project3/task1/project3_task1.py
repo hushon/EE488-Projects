@@ -1,16 +1,4 @@
-﻿# EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
-# Information Theory & Machine Learning Lab, School of EE, KAIST
-#
-# Revision history
-# Originally written in Matlab by Sae-Young Chung in Apr. 2016
-#   for EE405C Electronics Design Lab <Network of Smart Systems>, Spring 2016
-# Python & TensorFlow porting by Wonseok Jeon, Narae Ryu, Hwehee Chung in Dec. 2016
-#   for EE488C Special Topics in EE <Deep Learning and AlphaGo>, Fall 2016
-# Revised by Sae-Young Chung, 2017/12/07
-#   for EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
-
-
-import tensorflow as tf
+﻿import tensorflow as tf
 import numpy as np
 from boardgame import game1, game2, game3, game4, data_augmentation
 
@@ -121,59 +109,7 @@ with tf.Session() as sess:
     ### VARIABLE INITIALIZATION ###
     sess.run(tf.global_variables_initializer())
     
-    # for generation in range(len(n_train_list)):
-        # print("Generating training data for generation %d" % generation)                
-        # if generation == 0:
-        #     # number of games to play for training
-        #     n_train = n_train_list[generation] 
-        #     # number of games to play for testing
-        #     n_test = n_test_list[generation]
-        #     # randomness for all games
-        #     r1 = np.ones((n_train)) # randomness for player 1 for all games
-        #     r2 = np.ones((n_train)) # randomness for player 2 for all games
-        #     [d, w] = game.play_games([], r1, [], r2, n_train, nargout = 2)
-        # else:
-        #     # Play 'ng' games between two players using the previous
-        #     # generation value network 
-        #     # introduce randomness in moves for robustness
-        #     n_train = n_train_list[generation] # number of games to play for training
-        #     n_test = n_test_list[generation]   # number of games to play for testing
-        #     mt = game.nx * game.ny // 2
-        #     r1r = np.random.rand(n_train, 1)
-        #     r2r = np.random.rand(n_train, 1)
-        #     r1k = np.random.randint(mt * 2, size = (n_train, 1))
-        #     r2k = np.random.randint(mt * 2, size = (n_train, 1))
-        #     r1 = (r1k > mt) * r1r + (r1k <= mt) * (-r1k)
-        #     r2 = (r2k > mt) * r2r + (r2k <= mt) * (-r2k)
-        #     [d, w] = game.play_games(P, r1, P, r2, n_train, nargout = 2)
-
-        # # Data augmentation
-        # print("Data augmentation")
-        # [d, w, _] = data_augmentation(d, w, [])
-        # d = np.rollaxis(d, 3)
-        
-        # iteration = 0
-        # print("Start training")
-        # # Train the next generation value network
-        # for epoch in range(max_epoch):
-        #     # random shuffling
-        #     data_index = np.arange(len(w))
-        #     np.random.shuffle(data_index) 
-        #     num_batch = int(np.ceil(len(data_index) / float(size_minibatch)))
-        #     for batch_index in range(int(num_batch)):
-        #         batch_start = batch_index * size_minibatch
-        #         batch_end = min((batch_index + 1) * size_minibatch, len(data_index))
-        #         indices = data_index[np.arange(batch_start, batch_end)]
-        #         feed_dict = {S: d[indices, :, :, :], W: w[indices]}
-        #         sess.run(optimizer, feed_dict = feed_dict)
-        #         iteration += 1
-        #         if iteration % 100 == 99:
-        #             print("Epoch: %3d\t Iteration: %6d\t Loss: %10.5f" %\
-        #                 (epoch, iteration, sess.run(loss, feed_dict = feed_dict)))
-
-        # Save session.
-        #saver.save(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
-        # Load session
+    # Load session
     saver.restore(sess, "./project3_task1.ckpt")
 
     print("Evaluating neural network against itself")
@@ -209,7 +145,3 @@ with tf.Session() as sess:
     win2.append(s[0][1]); lose2.append(s[0][0]); tie2.append(s[0][2]);
     print(" net plays white: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
         (win2[generation], lose2[generation], tie2[generation]))
-
-    # saver.save(sess, "./project3_task1.ckpt")
-
-
