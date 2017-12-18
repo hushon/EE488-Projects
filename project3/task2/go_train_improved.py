@@ -152,13 +152,15 @@ with tf.Session() as sess:
             mt = game.nx * game.ny // 2
             # r1r = np.random.rand(n_train, 1)
             # r2r = np.random.rand(n_train, 1)
-            r1r = np.zeros((n_train, 1))
-            r2r = np.zeros((n_train, 1))
-            for i in range(n_train):
-                r1r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
-                r1r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
-            r1k = np.random.randint(mt * 2, size = (n_train, 1))
-            r2k = np.random.randint(mt * 2, size = (n_train, 1))
+            # r1r = np.zeros((n_train, 1))
+            # r2r = np.zeros((n_train, 1))
+            # for i in range(n_train):
+            #     r1r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
+            #     r1r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
+            r1r = np.random.uniform(low=0.0, high=1.0-generation/5, shape=(n_train, 1))
+            r1r = np.random.uniform(low=0.0, high=1.0-generation/5, shape=(n_train, 1))
+            r1k = np.random.randint(mt * 2 * (generation+1), size = (n_train, 1))
+            r2k = np.random.randint(mt * 2 * (generation+1), size = (n_train, 1))
             r1 = (r1k > mt) * r1r + (r1k <= mt) * (-r1k)
             r2 = (r2k > mt) * r2r + (r2k <= mt) * (-r2k)
             [d, w] = game.play_games(P, r1, P, r2, n_train, nargout = 2)
