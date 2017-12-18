@@ -156,9 +156,9 @@ with tf.Session() as sess:
             # r2r = np.zeros((n_train, 1))
             # for i in range(n_train):
             #     r1r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
-            #     r1r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
+            #     r2r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
             r1r = np.random.uniform(low=0.0, high=1.0-generation/5, size=(n_train, 1))
-            r1r = np.random.uniform(low=0.0, high=1.0-generation/5, size=(n_train, 1))
+            r2r = np.random.uniform(low=0.0, high=1.0-generation/5, size=(n_train, 1))
             r1k = np.random.randint(mt * 2 * (generation+1), size = (n_train, 1))
             r2k = np.random.randint(mt * 2 * (generation+1), size = (n_train, 1))
             r1 = (r1k > mt) * r1r + (r1k <= mt) * (-r1k)
