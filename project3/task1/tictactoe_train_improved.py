@@ -1,4 +1,4 @@
-# EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
+﻿# EE488B Special Topics in EE <Deep Learning and AlphaGo>, Fall 2017
 # Information Theory & Machine Learning Lab, School of EE, KAIST
 #
 # Revision history
@@ -14,8 +14,8 @@ import tensorflow as tf
 import numpy as np
 from boardgame import game1, game2, game3, game4, data_augmentation
 
-# Choose game Go
-game = game1()
+# Choose game tic-tac-toe
+game = game2()
 
 #####################################################################
 """                    DEFINE HYPERPARAMETERS                     """
@@ -27,12 +27,10 @@ size_minibatch = 1024
 # training epoch
 max_epoch = 10
 # number of training steps for each generation
-# n_train_list = [2000, 5000]
-# n_test_list = [1000, 1000]
-n_train_list = [2000, 5000, 8000, 11000, 14000]
-n_test_list = [1000, 1000, 1000, 1000, 1000]
+n_train_list = [5000, 25000, 35000]
+n_test_list = [1000, 1000, 1000]
 
-#####################################################################
+####################################################################
 """                COMPUTATIONAL GRAPH CONSTRUCTION               """
 #####################################################################
 
@@ -72,21 +70,13 @@ def network(state, nx, ny):
     # Create 2nd layer
     conv2 = tf.nn.conv2d(out1, weights2, strides = [1, 1, 1, 1], padding ='SAME')
     out2 = tf.nn.relu(conv2 + biases2)
-
-    # Create variables "weights3" and "biases3".
-    weights3 = tf.get_variable("weights3", [3, 3, 50, 70], initializer = init_weight)
-    biases3 = tf.get_variable("biases3", [70], initializer = init_bias)
-
-    # Create 3rd layer
-    conv3 = tf.nn.conv2d(out2, weights3, strides = [1, 1, 1, 1], padding ='SAME')
-    out3 = tf.nn.relu(conv3 + biases3)
-
+   
     # Create variables "weights1fc" and "biases1fc".
-    weights1fc = tf.get_variable("weights1fc", [nx * ny * 70, 100], initializer = init_weight)
+    weights1fc = tf.get_variable("weights1fc", [nx * ny * 50, 100], initializer = init_weight)
     biases1fc = tf.get_variable("biases1fc", [100], initializer = init_bias)
-
+    
     # Create 1st fully connected layer
-    fc1 = tf.reshape(out3, [-1, nx * ny * 70])
+    fc1 = tf.reshape(out2, [-1, nx * ny * 50])
     out1fc = tf.nn.relu(tf.matmul(fc1, weights1fc) + biases1fc)
 
     # Create variables "weights2fc" and "biases2fc".
@@ -132,8 +122,7 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     
     for generation in range(len(n_train_list)):
-        print("Generating training data for generation %d" % generation)
-                
+        print("Generating training data for generation %d" % generation)                
         if generation == 0:
             # number of games to play for training
             n_train = n_train_list[generation] 
@@ -152,13 +141,8 @@ with tf.Session() as sess:
             mt = game.nx * game.ny // 2
             # r1r = np.random.rand(n_train, 1)
             # r2r = np.random.rand(n_train, 1)
-            # r1r = np.zeros((n_train, 1))
-            # r2r = np.zeros((n_train, 1))
-            # for i in range(n_train):
-            #     r1r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
-            #     r2r[i][0] = np.random.uniform(low=0.0, high=1.0-i/n_train)
-            r1r = np.random.uniform(low=0.0, high=1.0-generation/5, size=(n_train, 1))
-            r2r = np.random.uniform(low=0.0, high=1.0-generation/5, size=(n_train, 1))
+            r1r = np.random.uniform(low=0.0, high=1.0-generation/3, size=(n_train, 1))
+            r2r = np.random.uniform(low=0.0, high=1.0-generation/3, size=(n_train, 1))
             r1k = np.random.randint(mt * 2, size = (n_train, 1))
             r2k = np.random.randint(mt * 2, size = (n_train, 1))
             r1 = (r1k > mt) * r1r + (r1k <= mt) * (-r1k)
@@ -177,7 +161,7 @@ with tf.Session() as sess:
             # random shuffling
             data_index = np.arange(len(w))
             np.random.shuffle(data_index) 
-            num_batch = np.ceil(len(data_index) / float(size_minibatch))
+            num_batch = int(np.ceil(len(data_index) / float(size_minibatch)))
             for batch_index in range(int(num_batch)):
                 batch_start = batch_index * size_minibatch
                 batch_end = min((batch_index + 1) * size_minibatch, len(data_index))
@@ -190,9 +174,9 @@ with tf.Session() as sess:
                         (epoch, iteration, sess.run(loss, feed_dict = feed_dict)))
 
         # Save session.
-        saver.save(sess, "./project3_task2_gen" + str(generation) + ".ckpt")
+        #saver.save(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
         # Load session
-        # saver.restore(sess, "./go_gen" + str(generation) + ".ckpt")
+        #saver.restore(sess, "./tictactoe_gen" + str(generation) + ".ckpt")
 
         print("Evaluating generation %d neural network against random policy" % generation)
     
@@ -209,4 +193,7 @@ with tf.Session() as sess:
         win2.append(s[0][1]); lose2.append(s[0][0]); tie2.append(s[0][2]);
         print(" net plays white: win=%6.4f, loss=%6.4f, tie=%6.4f" %\
             (win2[generation], lose2[generation], tie2[generation]))
+
+    saver.save(sess, "./project3_task1.ckpt")
+
 
