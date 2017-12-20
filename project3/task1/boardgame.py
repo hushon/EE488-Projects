@@ -16,7 +16,7 @@ from scipy.signal import convolve2d as conv2d
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.widgets import Button
-from tkinter import messagebox as tkMessageBox
+import tkMessageBox
 import time
 
 def data_augmentation(d, w, pos):
@@ -742,7 +742,7 @@ class board_game(object):
                         self.txt[xx, yy].set_visible(False)
 
                     if wp_all[xx, yy] >= 0:
-                        self.txt[xx, yy].set_text(round(wp_all[xx, yy, 0] * 100.0))
+                        self.txt[xx, yy].set_text(round(wp_all[xx, yy] * 100.0))
                         self.txt[xx, yy].set_visible(True)
                     else:
                         self.txt[xx, yy].set_visible(False)
