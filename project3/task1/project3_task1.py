@@ -16,7 +16,7 @@ size_minibatch = 1024
 max_epoch = 10
 # number of training steps for each generation
 n_train_list = [10000, 50000]
-n_test_list = [1000, 1000]
+n_test_list = [100000, 1000]
 
 ####################################################################
 """                COMPUTATIONAL GRAPH CONSTRUCTION               """
@@ -111,6 +111,11 @@ with tf.Session() as sess:
     
     # Load session
     saver.restore(sess, "./project3_task1.ckpt")
+
+    ## verification network ##
+
+    P_verif = tf.constant([123])
+    ##
 
     print("Evaluating neural network against itself")
     generation = 0
