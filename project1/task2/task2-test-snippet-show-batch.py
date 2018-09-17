@@ -2,7 +2,7 @@
 """
 Created on Sun Nov  5 13:15:52 2017
 
-@author: pride
+@author: 
 """
 
 import numpy as np

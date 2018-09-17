@@ -1,6 +1,5 @@
 ## EE488 Fall 2017
 ## Project 1 Task 1 Classifcation
-## Hyoung Uk Shon
 
 import tensorflow as tf
 import numpy as np

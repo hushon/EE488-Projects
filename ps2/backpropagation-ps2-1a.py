@@ -87,5 +87,3 @@ y = np.array([-0.5, 0.5])
 w = TrainingAlgorithm(l, a, x, y, MaxIter)
 print("**Training Results**")
 print("Weight of each Layer: w=", w)
-
-####씨뽤됏다####
